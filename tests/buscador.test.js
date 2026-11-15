@@ -39,6 +39,14 @@ test("normalizar conserva lo que no conoce, en singular simple", () => {
   assert.equal(normalizar("Alcachofas", CONOCIDOS), "alcachofa");
 });
 
+test("normalizar ignora cantidades, medidas y adjetivos", () => {
+  assert.equal(normalizar("2 papas grandes", CONOCIDOS), "papa");
+  assert.equal(normalizar("½ kg de carne molida", CONOCIDOS), "carne");
+  assert.equal(normalizar("3 alcachofas", CONOCIDOS), "alcachofa");
+  assert.equal(normalizar("1 taza de pan molido", CONOCIDOS), "pan molido");
+  assert.equal(normalizar("2 tazas", CONOCIDOS), "");
+});
+
 test("leerIngredientes separa por comas, saltos de línea e 'y'", () => {
   assert.deepEqual(
     leerIngredientes("papas, carne , tomate y cebolla", CONOCIDOS),

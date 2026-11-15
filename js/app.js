@@ -1,0 +1,633 @@
+// Las pantallas del recetario. Sin dependencias ni paso de compilación: el
+// navegador carga este módulo tal cual.
+//
+// Rutas (en el hash): #/  #/comidas  #/bebidas  #/postres  #/sugerencias
+// #/receta/<id>. Todo lo que escribe la persona se pinta con textContent
+// (función `h`), nunca como HTML.
+
+import { RECETAS, BASICOS } from "./recetas.js";
+import {
+  normalizar,
+  leerIngredientes,
+  clavesConocidas,
+  nombreBonito,
+  buscarPorIngredientes,
+} from "./buscador.js";
+
+const CONOCIDOS = clavesConocidas(RECETAS);
+
+const FRECUENTES = [
+  "papa", "carne", "pollo", "huevo", "arroz", "tomate", "cebolla", "fideo",
+  "queso", "leche", "zanahoria", "limon", "quinua", "platano", "harina",
+  "pan", "arveja", "choclo", "palta", "lenteja",
+];
+
+const SECCIONES = {
+  comida: {
+    ruta: "comidas", titulo: "Comidas", ejemplo: "Ej.: silpancho, quinua…",
+    intro: "Platos bolivianos y del mundo. Filtra por los simples o los más nutritivos.",
+    filtros: [
+      ["todas", "Todas"], ["bolivianas", "Bolivianas"], ["internacionales", "Internacionales"],
+      ["simples", "Simples"], ["nutritivas", "Nutritivas"],
+    ],
+  },
+  bebida: {
+    ruta: "bebidas", titulo: "Bebidas", ejemplo: "Ej.: mocochinchi, limón…",
+    intro: "Refrescos, jugos y bebidas calientes, y también tragos para los mayores.",
+    filtros: [
+      ["todas", "Todas"], ["sin-alcohol", "Sin alcohol"], ["con-alcohol", "Con alcohol"],
+      ["bolivianas", "Bolivianas"],
+    ],
+  },
+  postre: {
+    ruta: "postres", titulo: "Postres", ejemplo: "Ej.: buñuelos, leche…",
+    intro: "Dulces de casa: de los buñuelos al budín de pan.",
+    filtros: [
+      ["todas", "Todos"], ["bolivianas", "Bolivianos"], ["internacionales", "Internacionales"],
+      ["simples", "Simples"],
+    ],
+  },
+};
+
+const PRUEBAS = {
+  todas: () => true,
+  bolivianas: (r) => r.origen === "boliviana",
+  internacionales: (r) => r.origen === "internacional",
+  simples: (r) => r.etiquetas.includes("simple"),
+  nutritivas: (r) => r.etiquetas.includes("nutritiva"),
+  "sin-alcohol": (r) => r.alcohol === false,
+  "con-alcohol": (r) => r.alcohol === true,
+};
+
+// ───────────── Lo que se guarda en este dispositivo ─────────────
+
+function leerGuardado(clave, porDefecto) {
+  try {
+    const valor = localStorage.getItem(clave);
+    return valor ? JSON.parse(valor) : porDefecto;
+  } catch {
+    return porDefecto;
+  }
+}
+
+function guardar(clave, valor) {
+  try {
+    localStorage.setItem(clave, JSON.stringify(valor));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const esLista = (x) => Array.isArray(x) && x.every((s) => typeof s === "string");
+
+function esRecetaPropia(r) {
+  return (
+    r && typeof r.id === "string" && typeof r.nombre === "string" &&
+    Object.hasOwn(SECCIONES, r.seccion) &&
+    esLista(r.claves) && esLista(r.ingredientes) && esLista(r.pasos)
+  );
+}
+
+const guardadoTengo = leerGuardado("recetario.tengo", []);
+const guardadoMias = leerGuardado("recetario.mias", []);
+
+const estado = {
+  tengo: esLista(guardadoTengo) ? guardadoTengo : [],
+  mias: Array.isArray(guardadoMias) ? guardadoMias.filter(esRecetaPropia) : [],
+  filtro: { comida: "todas", bebida: "todas", postre: "todas" },
+  texto: { comida: "", bebida: "", postre: "" },
+};
+
+const todas = () => [...RECETAS, ...estado.mias];
+
+// ───────────── Ayudas para pintar ─────────────
+
+/** Crea un elemento. Los hijos de texto entran como texto, nunca como HTML. */
+function h(etiqueta, atributos = {}, ...hijos) {
+  const el = document.createElement(etiqueta);
+  for (const [nombre, valor] of Object.entries(atributos)) {
+    if (valor === false || valor == null) continue;
+    if (nombre === "class") el.className = valor;
+    else if (nombre.startsWith("on")) el.addEventListener(nombre.slice(2), valor);
+    else if (valor === true) el.setAttribute(nombre, "");
+    else el.setAttribute(nombre, valor);
+  }
+  for (const hijo of hijos.flat(Infinity)) {
+    if (hijo == null || hijo === false) continue;
+    el.append(hijo instanceof Node ? hijo : String(hijo));
+  }
+  return el;
+}
+
+const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+const sinTildes = (t) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/** Cambia de pantalla desde el código, empezando arriba como con un enlace. */
+function ir(hash) {
+  vinoPorEnlace = true;
+  location.hash = hash;
+}
+
+function enLista(claves) {
+  const nombres = claves.map(nombreBonito);
+  if (nombres.length <= 1) return nombres.join("");
+  return `${nombres.slice(0, -1).join(", ")} y ${nombres.at(-1)}`;
+}
+
+function distintivos(r) {
+  const lista = [];
+  if (r.propia) lista.push(["Tuya", "tuya"]);
+  else lista.push([r.origen === "boliviana" ? "Boliviana" : "Internacional", r.origen]);
+  if (r.etiquetas.includes("simple")) lista.push(["Simple", "simple"]);
+  if (r.etiquetas.includes("nutritiva")) lista.push(["Nutritiva", "nutritiva"]);
+  if (r.alcohol === true) lista.push(["Con alcohol", "alcohol"]);
+  if (r.alcohol === false) lista.push(["Sin alcohol", "sin-alcohol"]);
+  return h("span", { class: "distintivos" },
+    lista.map(([texto, clase]) => h("span", { class: `distintivo distintivo-${clase}` }, texto)));
+}
+
+function tarjeta(r, extra) {
+  return h("li", {},
+    h("a", { class: "tarjeta", href: `#/receta/${encodeURIComponent(r.id)}` },
+      h("span", { class: "tarjeta-emoji", "aria-hidden": "true" }, r.emoji),
+      h("span", { class: "tarjeta-cuerpo" },
+        h("span", { class: "tarjeta-nombre" }, r.nombre),
+        r.minutos ? h("span", { class: "tarjeta-meta" }, `${r.minutos} min`) : null,
+        distintivos(r),
+        extra,
+      ),
+    ),
+  );
+}
+
+const rejilla = (tarjetas) => h("ul", { class: "rejilla" }, tarjetas);
+
+// ───────────── Pantalla: ¿Qué tengo? ─────────────
+
+function vistaInicio() {
+  const entrada = h("input", {
+    id: "ingrediente", type: "text", autocomplete: "off", autocapitalize: "none",
+    enterkeyhint: "done", placeholder: "Ej.: papas, carne, tomate",
+    "aria-describedby": "ayuda-ingrediente",
+  });
+  const zonaTengo = h("div", { class: "zona-tengo" });
+  const zonaFrecuentes = h("div", { class: "fichas" });
+  const zonaResultados = h("div", { class: "resultados", "aria-live": "polite" });
+
+  function cambiar(tengo) {
+    estado.tengo = tengo;
+    guardar("recetario.tengo", tengo);
+    pintar();
+  }
+
+  function agregar(texto) {
+    const nuevas = leerIngredientes(texto, CONOCIDOS)
+      .filter((c) => !BASICOS.includes(c) && !estado.tengo.includes(c));
+    if (nuevas.length) cambiar([...estado.tengo, ...nuevas]);
+  }
+
+  const quitar = (clave) => cambiar(estado.tengo.filter((c) => c !== clave));
+
+  function pintar() {
+    zonaTengo.replaceChildren(
+      ...(estado.tengo.length === 0 ? [] : [
+        h("h2", { class: "subtitulo" }, "Tengo"),
+        h("div", { class: "fichas" },
+          estado.tengo.map((c) =>
+            h("button", {
+              type: "button", class: "ficha ficha-puesta",
+              "aria-label": `Quitar ${nombreBonito(c)}`, onclick: () => quitar(c),
+            }, mayuscula(nombreBonito(c)), h("span", { "aria-hidden": "true", class: "ficha-x" }, "×"))),
+          h("button", { type: "button", class: "enlace", onclick: () => cambiar([]) }, "Borrar todo"),
+        ),
+      ]),
+    );
+
+    const { nodos, total } = resultados();
+    if (total > 0) {
+      zonaTengo.append(
+        h("button", {
+          type: "button", class: "boton boton-ver",
+          onclick: () => zonaResultados.scrollIntoView({ behavior: "smooth", block: "start" }),
+        }, total === 1 ? "Ver 1 receta posible ↓" : `Ver ${total} recetas posibles ↓`),
+      );
+    }
+
+    zonaFrecuentes.replaceChildren(
+      ...FRECUENTES.filter((c) => !estado.tengo.includes(c)).map((c) =>
+        h("button", { type: "button", class: "ficha", onclick: () => agregar(c) },
+          h("span", { "aria-hidden": "true" }, "+ "), mayuscula(nombreBonito(c)))),
+    );
+
+    zonaResultados.replaceChildren(...nodos);
+  }
+
+  function resultados() {
+    if (estado.tengo.length === 0) {
+      return {
+        total: 0,
+        nodos: [
+          h("h2", { class: "subtitulo" }, "Mientras tanto, ideas para hoy"),
+          rejilla(ideasDeHoy().map((r) => tarjeta(r))),
+        ],
+      };
+    }
+
+    const encontrados = buscarPorIngredientes(todas(), estado.tengo);
+    const conFalta = (x) =>
+      h("span", { class: x.faltan.length ? "tarjeta-falta" : "tarjeta-falta tarjeta-completa" },
+        x.faltan.length ? `Te falta: ${enLista(x.faltan)}` : "Tienes todo lo principal");
+
+    const grupos = [
+      ["Puedes prepararlo ya", encontrados.filter((x) => x.faltan.length === 0)],
+      ["Te falta poco", encontrados.filter((x) => x.faltan.length >= 1 && x.faltan.length <= 2)],
+      ["Con algunas cosas más", encontrados.filter((x) => x.faltan.length > 2 && x.cobertura >= 0.3)],
+    ].filter(([, lista]) => lista.length > 0);
+
+    if (grupos.length === 0) {
+      return {
+        total: 0,
+        nodos: [
+          h("p", { class: "aviso" },
+            "No encontré recetas con eso. Prueba a agregar otro ingrediente o revisa cómo está escrito."),
+        ],
+      };
+    }
+
+    const total = grupos.reduce((n, [, lista]) => n + lista.length, 0);
+    return {
+      total,
+      nodos: grupos.flatMap(([titulo, lista]) => [
+        h("h2", { class: "subtitulo" }, titulo),
+        rejilla(lista.map((x) => tarjeta(x.receta, conFalta(x)))),
+      ]),
+    };
+  }
+
+  pintar();
+
+  return h("div", { class: "vista" },
+    h("h1", {}, "¿Qué tienes en casa?"),
+    h("p", { class: "intro" }, "Dime tus ingredientes y te muestro qué puedes cocinar con ellos."),
+    h("form", {
+      class: "buscador",
+      onsubmit: (e) => {
+        e.preventDefault();
+        agregar(entrada.value);
+        entrada.value = "";
+      },
+    },
+      h("label", { for: "ingrediente" }, "Escribe lo que tienes"),
+      h("div", { class: "fila" }, entrada, h("button", { type: "submit", class: "boton" }, "Agregar")),
+      h("p", { id: "ayuda-ingrediente", class: "ayuda" },
+        "Puedes escribir varios, separados por comas. Sal, aceite, agua, azúcar y ajo se dan por hechos."),
+    ),
+    zonaTengo,
+    h("h2", { class: "subtitulo" }, "O toca para agregar"),
+    zonaFrecuentes,
+    zonaResultados,
+  );
+}
+
+// ───────────── Pantallas: Comidas, Bebidas, Postres ─────────────
+
+function vistaSeccion(seccion) {
+  const def = SECCIONES[seccion];
+  const zonaFiltros = h("div", { class: "fichas", role: "group", "aria-label": "Filtrar" });
+  const zonaLista = h("div", { "aria-live": "polite" });
+
+  function pintar() {
+    zonaFiltros.replaceChildren(
+      ...def.filtros.map(([clave, texto]) =>
+        h("button", {
+          type: "button",
+          class: estado.filtro[seccion] === clave ? "ficha ficha-activa" : "ficha",
+          "aria-pressed": String(estado.filtro[seccion] === clave),
+          onclick: () => { estado.filtro[seccion] = clave; pintar(); },
+        }, texto)),
+    );
+
+    const buscado = sinTildes(estado.texto[seccion].trim());
+    const clave = normalizar(buscado, CONOCIDOS);
+    const lista = todas()
+      .filter((r) => r.seccion === seccion)
+      .filter(PRUEBAS[estado.filtro[seccion]])
+      .filter((r) => !buscado || sinTildes(r.nombre).includes(buscado) || r.claves.includes(clave))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+    zonaLista.replaceChildren(
+      h("p", { class: "cuenta" }, lista.length === 1 ? "1 receta" : `${lista.length} recetas`),
+      lista.length
+        ? rejilla(lista.map((r) => tarjeta(r)))
+        : h("p", { class: "aviso" }, "No hay recetas con ese filtro. Prueba con otro."),
+    );
+  }
+
+  const busca = h("input", {
+    id: "busca-nombre", type: "search", autocomplete: "off",
+    placeholder: def.ejemplo, value: estado.texto[seccion],
+    oninput: (e) => { estado.texto[seccion] = e.target.value; pintar(); },
+  });
+
+  pintar();
+
+  return h("div", { class: "vista" },
+    h("h1", {}, def.titulo),
+    h("p", { class: "intro" }, def.intro),
+    zonaFiltros,
+    h("div", { class: "buscador buscador-nombre" },
+      h("label", { for: "busca-nombre" }, "Buscar por nombre o ingrediente"),
+      busca,
+    ),
+    zonaLista,
+  );
+}
+
+// ───────────── Pantalla: una receta ─────────────
+
+function textoParaCompartir(r) {
+  return [
+    r.nombre,
+    "",
+    "Ingredientes:",
+    ...r.ingredientes.map((i) => `- ${i}`),
+    "",
+    "Preparación:",
+    ...r.pasos.map((p, n) => `${n + 1}. ${p}`),
+  ].join("\n");
+}
+
+async function compartir(r) {
+  const datos = r.propia
+    ? { title: r.nombre, text: textoParaCompartir(r) }
+    : { title: r.nombre, text: `${r.nombre}: receta del Recetario`, url: location.href };
+  if (navigator.share) {
+    try {
+      await navigator.share(datos);
+    } catch {
+      // La persona cerró el menú de compartir: no hay nada que hacer.
+    }
+    return;
+  }
+  const mensaje = datos.url ? `${datos.text} ${datos.url}` : datos.text;
+  window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener");
+}
+
+function vistaReceta(id) {
+  const r = todas().find((x) => x.id === id);
+  if (!r) return vistaNoEncontrada();
+
+  const def = SECCIONES[r.seccion];
+  const datos = [
+    r.minutos ? `⏱ ${r.minutos} min` : null,
+    r.porciones ? `🍽 ${r.porciones} ${r.porciones === 1 ? "porción" : "porciones"}` : null,
+  ].filter(Boolean);
+
+  const faltan = estado.tengo.length ? r.claves.filter((c) => !estado.tengo.includes(c)) : null;
+
+  return h("article", { class: "vista receta" },
+    h("a", { class: "volver", href: `#/${def.ruta}` }, `← ${def.titulo}`),
+    h("div", { class: "receta-cabeza" },
+      h("span", { class: "receta-emoji", "aria-hidden": "true" }, r.emoji),
+      h("div", {},
+        h("h1", {}, r.nombre),
+        distintivos(r),
+      ),
+    ),
+    r.descripcion ? h("p", { class: "intro" }, r.descripcion) : null,
+    datos.length ? h("p", { class: "receta-datos" }, datos.join("   ·   ")) : null,
+    r.alcohol === true
+      ? h("p", { class: "aviso aviso-alcohol" }, "Lleva alcohol: solo para mayores de 18 años y con moderación.")
+      : null,
+    faltan && r.claves.length
+      ? h("p", { class: faltan.length ? "aviso" : "aviso aviso-bien" },
+          faltan.length
+            ? `Según lo que tienes, te falta: ${enLista(faltan)}.`
+            : "Según lo que tienes, ya cuentas con todo lo principal.")
+      : null,
+
+    h("h2", {}, "Ingredientes"),
+    h("ul", { class: "marcables" },
+      r.ingredientes.map((texto) => h("li", {}, h("label", {}, h("input", { type: "checkbox" }), h("span", {}, texto))))),
+
+    h("h2", {}, "Preparación"),
+    h("ol", { class: "pasos" }, r.pasos.map((texto) => h("li", {}, texto))),
+
+    h("div", { class: "acciones" },
+      h("button", { type: "button", class: "boton", onclick: () => compartir(r) }, "Compartir receta"),
+      r.propia
+        ? h("button", {
+            type: "button", class: "boton boton-suave",
+            onclick: () => {
+              if (!confirm(`¿Borrar tu receta "${r.nombre}"? No se puede deshacer.`)) return;
+              estado.mias = estado.mias.filter((x) => x.id !== r.id);
+              guardar("recetario.mias", estado.mias);
+              ir("#/sugerencias");
+            },
+          }, "Borrar mi receta")
+        : null,
+    ),
+  );
+}
+
+function vistaNoEncontrada() {
+  return h("div", { class: "vista" },
+    h("h1", {}, "No encontré esa página"),
+    h("p", { class: "intro" }, "Puede que la receta ya no exista o que el enlace esté incompleto."),
+    h("a", { class: "boton", href: "#/" }, "Ir al inicio"),
+  );
+}
+
+// ───────────── Pantalla: Ideas (sugerencias y recetas propias) ─────────────
+
+/** Una comida, una bebida sin alcohol y un postre que cambian cada día. */
+function ideasDeHoy() {
+  const hoy = new Date();
+  const dia = Math.floor(
+    (Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()) - Date.UTC(2026, 0, 1)) / 86400000,
+  );
+  const elegir = (lista, salto) => lista[(((dia * salto) % lista.length) + lista.length) % lista.length];
+  return [
+    elegir(RECETAS.filter((r) => r.seccion === "comida"), 7),
+    elegir(RECETAS.filter((r) => r.seccion === "bebida" && r.alcohol === false), 3),
+    elegir(RECETAS.filter((r) => r.seccion === "postre"), 5),
+  ];
+}
+
+function vistaSugerencias() {
+  const error = h("p", { class: "aviso aviso-error", role: "alert", hidden: true });
+  const campo = (id, etiqueta, control, ayuda) =>
+    h("div", { class: "campo" },
+      h("label", { for: id }, etiqueta),
+      control,
+      ayuda ? h("p", { class: "ayuda", id: `${id}-ayuda` }, ayuda) : null);
+
+  const nombre = h("input", { id: "r-nombre", type: "text", autocomplete: "off", maxlength: "80" });
+  const seccion = h("select", { id: "r-seccion" },
+    h("option", { value: "comida" }, "Comida"),
+    h("option", { value: "bebida" }, "Bebida"),
+    h("option", { value: "postre" }, "Postre"));
+  const alcohol = h("input", { id: "r-alcohol", type: "checkbox" });
+  const filaAlcohol = h("label", { class: "casilla", hidden: true }, alcohol, h("span", {}, "Lleva alcohol"));
+  seccion.addEventListener("change", () => { filaAlcohol.hidden = seccion.value !== "bebida"; });
+  const minutos = h("input", { id: "r-minutos", type: "number", min: "1", max: "600", inputmode: "numeric" });
+  const ingredientes = h("textarea", { id: "r-ingredientes", rows: "5", "aria-describedby": "r-ingredientes-ayuda" });
+  const pasos = h("textarea", { id: "r-pasos", rows: "6", "aria-describedby": "r-pasos-ayuda" });
+
+  const lineas = (t) => t.split("\n").map((l) => l.trim()).filter(Boolean);
+
+  function alGuardar(e) {
+    e.preventDefault();
+    const listaIngredientes = lineas(ingredientes.value);
+    const listaPasos = lineas(pasos.value);
+    const faltas = [];
+    if (!nombre.value.trim()) faltas.push("el nombre");
+    if (listaIngredientes.length === 0) faltas.push("al menos un ingrediente");
+    if (listaPasos.length === 0) faltas.push("al menos un paso");
+    if (faltas.length) {
+      error.textContent = `Falta ${faltas.join(", ")}.`;
+      error.hidden = false;
+      return;
+    }
+
+    const claves = [];
+    for (const linea of listaIngredientes) {
+      const clave = normalizar(linea, CONOCIDOS);
+      const util = clave && (CONOCIDOS.has(clave) || !clave.includes(" "));
+      if (util && !BASICOS.includes(clave) && !claves.includes(clave)) claves.push(clave);
+    }
+
+    const tiempo = Number.parseInt(minutos.value, 10);
+    const receta = {
+      id: `mia-${Date.now().toString(36)}`,
+      propia: true,
+      nombre: nombre.value.trim(),
+      seccion: seccion.value,
+      origen: "propia",
+      etiquetas: [],
+      emoji: "📝",
+      descripcion: "",
+      minutos: Number.isFinite(tiempo) && tiempo > 0 ? tiempo : null,
+      porciones: null,
+      claves,
+      ingredientes: listaIngredientes,
+      pasos: listaPasos,
+    };
+    if (receta.seccion === "bebida") receta.alcohol = alcohol.checked;
+
+    const nuevas = [...estado.mias, receta];
+    if (!guardar("recetario.mias", nuevas)) {
+      error.textContent = "No pude guardar la receta en este dispositivo. Revisa que el navegador no esté en modo privado.";
+      error.hidden = false;
+      return;
+    }
+    estado.mias = nuevas;
+    ir(`#/receta/${receta.id}`);
+  }
+
+  const sorpresa = () => {
+    const lista = todas();
+    const r = lista[Math.floor(Math.random() * lista.length)];
+    ir(`#/receta/${encodeURIComponent(r.id)}`);
+  };
+
+  return h("div", { class: "vista" },
+    h("h1", {}, "Ideas y recetas nuevas"),
+    h("p", { class: "intro" }, "Sugerencias que cambian cada día, y un lugar para guardar tus propias recetas."),
+
+    h("h2", { class: "subtitulo" }, "Para probar hoy"),
+    rejilla(ideasDeHoy().map((r) => tarjeta(r))),
+    h("div", { class: "acciones" },
+      h("button", { type: "button", class: "boton", onclick: sorpresa }, "🎲 Sorpréndeme con otra")),
+
+    h("h2", { class: "subtitulo" }, "Tus recetas"),
+    estado.mias.length
+      ? rejilla(estado.mias.map((r) => tarjeta(r)))
+      : h("p", { class: "ayuda" }, "Todavía no agregaste ninguna. Usa el formulario de abajo."),
+
+    h("h2", { class: "subtitulo" }, "Agregar una receta nueva"),
+    h("form", { class: "formulario", novalidate: true, onsubmit: alGuardar },
+      campo("r-nombre", "Nombre de la receta", nombre),
+      h("div", { class: "campos-fila" },
+        campo("r-seccion", "Sección", seccion),
+        campo("r-minutos", "Minutos (opcional)", minutos)),
+      filaAlcohol,
+      campo("r-ingredientes", "Ingredientes", ingredientes, "Uno por línea. Ej.: 2 papas grandes"),
+      campo("r-pasos", "Preparación", pasos, "Un paso por línea."),
+      error,
+      h("button", { type: "submit", class: "boton" }, "Guardar receta"),
+      h("p", { class: "ayuda" },
+        "Se guarda solo en este teléfono o computadora. Aparece en su sección y en la búsqueda por ingredientes, y puedes enviarla con «Compartir receta»."),
+    ),
+  );
+}
+
+// ───────────── Rutas ─────────────
+
+const principal = document.getElementById("contenido");
+const posiciones = new Map();
+let rutaPintada = null;
+let vinoPorEnlace = false;
+
+function leerRuta() {
+  const partes = location.hash.replace(/^#\/?/, "").split("/");
+  let id = partes.slice(1).join("/");
+  try {
+    id = decodeURIComponent(id);
+  } catch {
+    // Un % suelto en el enlace: se usa tal cual y saldrá "no encontré".
+  }
+  return { parte: partes[0] || "inicio", id };
+}
+
+function pintarRuta() {
+  if (rutaPintada !== null) posiciones.set(rutaPintada, window.scrollY);
+
+  const { parte, id } = leerRuta();
+  let vista;
+  let titulo;
+  let activa = parte;
+
+  const seccion = Object.keys(SECCIONES).find((s) => SECCIONES[s].ruta === parte);
+  if (parte === "inicio") {
+    vista = vistaInicio();
+    titulo = "¿Qué tienes en casa?";
+  } else if (seccion) {
+    vista = vistaSeccion(seccion);
+    titulo = SECCIONES[seccion].titulo;
+  } else if (parte === "sugerencias") {
+    vista = vistaSugerencias();
+    titulo = "Ideas y recetas nuevas";
+  } else if (parte === "receta") {
+    const r = todas().find((x) => x.id === id);
+    vista = vistaReceta(id);
+    titulo = r ? r.nombre : "No encontrada";
+    activa = r ? SECCIONES[r.seccion].ruta : "";
+  } else {
+    vista = vistaNoEncontrada();
+    titulo = "No encontrada";
+  }
+
+  principal.replaceChildren(vista);
+  document.title = `${titulo} · Recetario`;
+
+  for (const enlace of document.querySelectorAll(".menu a")) {
+    if (enlace.dataset.seccion === activa) enlace.setAttribute("aria-current", "page");
+    else enlace.removeAttribute("aria-current");
+  }
+
+  // Al volver atrás se recupera dónde estaba la persona; un enlace empieza arriba.
+  const clave = location.hash || "#/";
+  window.scrollTo(0, vinoPorEnlace ? 0 : posiciones.get(clave) ?? 0);
+  if (rutaPintada !== null) principal.focus({ preventScroll: true });
+  rutaPintada = clave;
+  vinoPorEnlace = false;
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target instanceof Element && e.target.closest('a[href^="#/"]')) vinoPorEnlace = true;
+});
+window.addEventListener("hashchange", pintarRuta);
+pintarRuta();

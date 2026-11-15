@@ -76,6 +76,14 @@ const RELLENO = new Set([
   "poco", "poca", "pocos", "pocas", "algo", "mucho", "mucha", "medio", "media",
   "kilo", "kilos", "gramo", "gramos", "taza", "tazas", "litro", "litros",
   "con", "para", "y", "o", "tengo", "hay", "queda", "quedan", "sobra", "sobran",
+  // Medidas y adjetivos de una lista de ingredientes ("2 papas grandes").
+  "g", "kg", "ml", "l", "cucharada", "cucharadas", "cucharadita", "cucharaditas",
+  "lata", "latas", "vaso", "vasos", "rama", "ramas", "diente", "dientes",
+  "puñado", "pizca", "trozo", "trozos", "presa", "presas", "hoja", "hojas",
+  "grande", "grandes", "mediano", "mediana", "medianos", "medianas",
+  "pequeño", "pequeña", "pequeños", "pequeñas", "maduro", "maduros", "madura",
+  "maduras", "picado", "picada", "picados", "picadas", "cocido", "cocida",
+  "cocidos", "cocidas", "fresco", "fresca", "frescos", "frescas",
 ]);
 
 // Claves cuyo nombre para mostrar lleva tilde.
@@ -137,7 +145,7 @@ export function normalizar(texto, conocidos = new Set()) {
   const entera = resolver(frase, conocidos);
   if (entera) return entera;
 
-  const palabras = frase.split(" ").filter((p) => !RELLENO.has(p));
+  const palabras = frase.split(" ").filter((p) => !RELLENO.has(p) && !/^\d+$/.test(p));
   if (palabras.length === 0) return "";
 
   const sinRelleno = palabras.join(" ");

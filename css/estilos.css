@@ -1,0 +1,287 @@
+/* Recetario. Letra grande y botones amplios: está pensado para usarse en la
+   cocina, desde el celular. En pantallas angostas el menú va abajo. */
+
+:root {
+  --fondo: #fbf6ee;
+  --superficie: #ffffff;
+  --texto: #2b211a;
+  --suave: #65554a;
+  --primario: #a63d14;
+  --sobre-primario: #ffffff;
+  --borde: #e4d8c5;
+  --ficha: #f1e6d3;
+  --verde: #25603a;
+  --verde-fondo: #e3f1e6;
+  --aviso-fondo: #fdf0d9;
+  --error: #9c1c1c;
+  --sombra: 0 1px 2px rgb(60 40 20 / 8%), 0 4px 14px rgb(60 40 20 / 6%);
+  --radio: 14px;
+  --alto-menu: 68px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #1b1613;
+    --superficie: #27201b;
+    --texto: #f4ece1;
+    --suave: #c7b8a8;
+    --primario: #f29a6e;
+    --sobre-primario: #2a1508;
+    --borde: #43372e;
+    --ficha: #3a2f27;
+    --verde: #9ad7ab;
+    --verde-fondo: #1f3326;
+    --aviso-fondo: #3b2f1c;
+    --error: #ffb3b3;
+    --sombra: 0 1px 2px rgb(0 0 0 / 40%);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font: 1.125rem/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  padding-bottom: calc(var(--alto-menu) + env(safe-area-inset-bottom));
+}
+
+h1, h2, .marca, .tarjeta-nombre {
+  font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  line-height: 1.2;
+}
+
+h1 { font-size: 1.9rem; margin: 0 0 .4rem; text-wrap: balance; }
+h2 { font-size: 1.35rem; margin: 2rem 0 .75rem; }
+
+a { color: var(--primario); }
+
+:focus-visible { outline: 3px solid var(--primario); outline-offset: 2px; border-radius: 6px; }
+main:focus { outline: none; }
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 30;
+  background: var(--primario); color: var(--sobre-primario); padding: .6rem 1rem;
+}
+.saltar:focus { left: 0; }
+
+/* ── Cabecera y menú ── */
+
+.cabecera {
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+}
+
+.marca {
+  display: block;
+  padding: .7rem 1rem;
+  font-size: 1.4rem; font-weight: 700;
+  color: var(--texto); text-decoration: none;
+}
+
+.menu {
+  position: fixed; inset: auto 0 0 0; z-index: 20;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--superficie);
+  border-top: 1px solid var(--borde);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.menu a {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .1rem; min-height: var(--alto-menu); padding: .3rem .1rem;
+  color: var(--suave); text-decoration: none;
+  font-size: .8rem; font-weight: 600; text-align: center;
+}
+
+.menu-icono { font-size: 1.45rem; line-height: 1; }
+
+.menu a[aria-current="page"] {
+  color: var(--primario);
+  box-shadow: inset 0 3px 0 var(--primario);
+}
+
+/* ── Contenido ── */
+
+main { max-width: 1100px; margin: 0 auto; padding: 1.25rem 1rem 2rem; }
+
+.intro { color: var(--suave); margin: 0 0 1.25rem; max-width: 60ch; }
+.subtitulo { font-size: 1.2rem; margin: 1.75rem 0 .7rem; }
+.cuenta { color: var(--suave); margin: 1.25rem 0 0; font-size: 1rem; }
+.ayuda { color: var(--suave); font-size: .95rem; margin: .4rem 0 0; }
+
+.aviso {
+  background: var(--aviso-fondo); border-radius: var(--radio);
+  padding: .8rem 1rem; margin: 1rem 0;
+}
+.aviso-bien { background: var(--verde-fondo); color: var(--verde); }
+.aviso-error { color: var(--error); font-weight: 600; }
+
+/* ── Formularios ── */
+
+label { font-weight: 600; }
+
+input[type="text"], input[type="search"], input[type="number"], select, textarea {
+  width: 100%; min-height: 52px;
+  padding: .7rem .9rem;
+  font: inherit; color: var(--texto);
+  background: var(--superficie);
+  border: 2px solid var(--borde); border-radius: var(--radio);
+}
+textarea { resize: vertical; line-height: 1.45; }
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none; border-color: var(--primario); border-radius: var(--radio);
+}
+
+.buscador label { display: block; margin-bottom: .4rem; }
+.buscador-nombre { margin-top: 1.25rem; max-width: 520px; }
+.fila { display: flex; gap: .6rem; }
+.fila input { flex: 1; min-width: 0; }
+
+.boton {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px; padding: .6rem 1.3rem;
+  font: inherit; font-weight: 700; text-decoration: none;
+  color: var(--sobre-primario); background: var(--primario);
+  border: 2px solid var(--primario); border-radius: var(--radio);
+  cursor: pointer;
+}
+.boton-suave { background: transparent; color: var(--primario); }
+.boton-ver { margin-top: 1rem; width: 100%; max-width: 420px; }
+.resultados { scroll-margin-top: 80px; }
+
+.enlace {
+  font: inherit; color: var(--primario); background: none; border: 0;
+  text-decoration: underline; cursor: pointer; padding: .5rem; min-height: 44px;
+}
+
+.formulario { max-width: 640px; display: grid; gap: 1rem; }
+.campo label { display: block; margin-bottom: .35rem; }
+.campos-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.casilla { display: flex; align-items: center; gap: .6rem; min-height: 44px; }
+.casilla input, .marcables input { width: 1.5rem; height: 1.5rem; accent-color: var(--primario); flex: none; }
+
+/* ── Fichas (ingredientes y filtros) ── */
+
+.fichas { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+
+.ficha {
+  display: inline-flex; align-items: center; gap: .35rem;
+  min-height: 44px; padding: .35rem .95rem;
+  font: inherit; font-size: 1rem; color: var(--texto);
+  background: var(--ficha); border: 2px solid transparent; border-radius: 999px;
+  cursor: pointer;
+}
+.ficha-puesta, .ficha-activa {
+  background: var(--primario); color: var(--sobre-primario); font-weight: 600;
+}
+.ficha-x { font-size: 1.3rem; line-height: 1; }
+
+/* ── Tarjetas ── */
+
+.rejilla {
+  list-style: none; margin: .75rem 0 0; padding: 0;
+  display: grid; gap: .8rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+}
+
+.tarjeta {
+  display: flex; gap: .9rem; align-items: flex-start;
+  height: 100%; padding: .9rem 1rem;
+  color: var(--texto); text-decoration: none;
+  background: var(--superficie);
+  border: 1px solid var(--borde); border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+.tarjeta:hover { border-color: var(--primario); }
+
+.tarjeta-emoji { font-size: 2.2rem; line-height: 1.1; }
+.tarjeta-cuerpo { display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+.tarjeta-nombre { font-size: 1.2rem; font-weight: 700; }
+.tarjeta-meta { color: var(--suave); font-size: .95rem; }
+.tarjeta-falta { font-size: .98rem; color: var(--suave); }
+.tarjeta-completa { color: var(--verde); font-weight: 600; }
+
+.distintivos { display: flex; flex-wrap: wrap; gap: .3rem; }
+.distintivo {
+  font-size: .8rem; font-weight: 600; font-family: system-ui, sans-serif;
+  padding: .1rem .55rem; border-radius: 999px;
+  background: var(--ficha); color: var(--texto);
+}
+.distintivo-nutritiva, .distintivo-sin-alcohol { background: var(--verde-fondo); color: var(--verde); }
+.distintivo-alcohol { background: var(--aviso-fondo); }
+
+/* ── Receta ── */
+
+.receta { max-width: 760px; }
+.volver { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none; }
+.receta-cabeza { display: flex; gap: 1rem; align-items: center; margin: .5rem 0 1rem; }
+.receta-emoji { font-size: 3.4rem; line-height: 1; }
+.receta-datos { font-weight: 600; margin: 0 0 1rem; }
+
+.marcables { list-style: none; margin: 0; padding: 0; }
+.marcables li { border-bottom: 1px solid var(--borde); }
+.marcables label {
+  display: flex; gap: .8rem; align-items: flex-start;
+  padding: .7rem 0; font-weight: 400; cursor: pointer;
+}
+.marcables input { margin: .15rem 0 0; }
+.marcables input:checked + span { color: var(--suave); text-decoration: line-through; }
+
+.pasos { margin: 0; padding: 0; list-style: none; counter-reset: paso; }
+.pasos li {
+  counter-increment: paso;
+  position: relative; padding: .2rem 0 1.1rem 3.1rem; min-height: 2.6rem;
+}
+.pasos li::before {
+  content: counter(paso);
+  position: absolute; left: 0; top: 0;
+  width: 2.2rem; height: 2.2rem; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--primario); color: var(--sobre-primario); font-weight: 700;
+}
+
+.acciones { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.5rem; }
+
+.pie { text-align: center; color: var(--suave); font-size: .9rem; padding: 0 1rem 1.5rem; }
+
+/* ── Pantallas anchas: el menú sube a la cabecera ── */
+
+@media (min-width: 800px) {
+  body { padding-bottom: 0; }
+
+  .cabecera {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 max(1rem, calc((100vw - 1100px) / 2));
+  }
+
+  .marca { padding-left: 0; }
+
+  .menu {
+    position: static; display: flex; gap: .25rem;
+    border: 0; padding: 0; background: none;
+  }
+
+  .menu a {
+    flex-direction: row; gap: .45rem;
+    min-height: 60px; padding: 0 .9rem; font-size: 1rem;
+  }
+
+  .menu-icono { font-size: 1.2rem; }
+  .menu a[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--primario); }
+
+  main { padding-top: 2rem; }
+  h1 { font-size: 2.3rem; }
+  .buscador { max-width: 640px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tarjeta, .ficha, .boton { transition: border-color .15s, background-color .15s; }
+}
