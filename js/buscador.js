@@ -191,17 +191,36 @@ export function nombreBonito(clave) {
 }
 
 /**
- * Recetas que usan al menos uno de los ingredientes en `tengo` (claves).
- * Devuelve { receta, tiene, faltan, cobertura }, ordenado: primero las que
- * cubren mayor parte de sus ingredientes principales, luego las que usan más
- * de lo que hay, luego las que piden menos cosas extra, luego por nombre.
+ * Las claves más usadas en `recetas`, de más a menos (a igualdad, por nombre).
+ * Sirve para proponer ingredientes de una sección. `excluir`: claves a saltar.
  */
-export function buscarPorIngredientes(recetas, tengo) {
+export function ingredientesFrecuentes(recetas, { cuantos = 18, excluir = [] } = {}) {
+  const veces = new Map();
+  for (const r of recetas) {
+    for (const c of r.claves ?? []) {
+      if (!excluir.includes(c)) veces.set(c, (veces.get(c) ?? 0) + 1);
+    }
+  }
+  return [...veces]
+    .sort(([a, na], [b, nb]) => nb - na || a.localeCompare(b, "es"))
+    .slice(0, cuantos)
+    .map(([clave]) => clave);
+}
+
+/**
+ * Recetas que usan al menos uno de los ingredientes en `tengo` (claves).
+ * Con `seccion` ("comida", "bebida" o "postre") solo mira las de esa sección.
+ * Devuelve { receta, tiene, faltan, cobertura }, ordenado: primero las que
+ * piden menos cosas que no hay, luego las que usan más de lo que hay, luego
+ * las más rápidas, luego por nombre.
+ */
+export function buscarPorIngredientes(recetas, tengo, { seccion } = {}) {
   const disponibles = new Set(tengo);
   if (disponibles.size === 0) return [];
 
   const resultados = [];
   for (const receta of recetas) {
+    if (seccion && receta.seccion !== seccion) continue;
     const claves = receta.claves ?? [];
     const tiene = claves.filter((c) => disponibles.has(c));
     if (tiene.length === 0) continue;
@@ -209,11 +228,12 @@ export function buscarPorIngredientes(recetas, tengo) {
     resultados.push({ receta, tiene, faltan, cobertura: tiene.length / claves.length });
   }
 
+  const minutos = (x) => x.receta.minutos ?? Number.MAX_SAFE_INTEGER;
   resultados.sort(
     (a, b) =>
-      b.cobertura - a.cobertura ||
-      b.tiene.length - a.tiene.length ||
       a.faltan.length - b.faltan.length ||
+      b.tiene.length - a.tiene.length ||
+      minutos(a) - minutos(b) ||
       a.receta.nombre.localeCompare(b.receta.nombre, "es"),
   );
   return resultados;

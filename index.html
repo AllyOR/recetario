@@ -8,6 +8,17 @@
   <meta name="theme-color" content="#a63d14">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍲%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/estilos.css">
+  <script>
+    // Pone el modo día o noche antes de pintar, para que no parpadee.
+    (function () {
+      var tema = null;
+      try { tema = localStorage.getItem("recetario.tema"); } catch (e) {}
+      if (tema !== "claro" && tema !== "oscuro") {
+        tema = window.matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro";
+      }
+      document.documentElement.dataset.tema = tema;
+    })();
+  </script>
 </head>
 <body>
   <a class="saltar" href="#contenido">Saltar al contenido</a>
@@ -21,6 +32,7 @@
       <a href="#/postres" data-seccion="postres"><span class="menu-icono" aria-hidden="true">🍮</span><span>Postres</span></a>
       <a href="#/sugerencias" data-seccion="sugerencias"><span class="menu-icono" aria-hidden="true">💡</span><span>Ideas</span></a>
     </nav>
+    <button type="button" id="tema" class="boton-tema" hidden></button>
   </header>
 
   <main id="contenido" tabindex="-1">

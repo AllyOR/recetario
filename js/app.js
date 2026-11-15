@@ -12,19 +12,16 @@ import {
   clavesConocidas,
   nombreBonito,
   buscarPorIngredientes,
+  ingredientesFrecuentes,
 } from "./buscador.js";
 
 const CONOCIDOS = clavesConocidas(RECETAS);
 
-const FRECUENTES = [
-  "papa", "carne", "pollo", "huevo", "arroz", "tomate", "cebolla", "fideo",
-  "queso", "leche", "zanahoria", "limon", "quinua", "platano", "harina",
-  "pan", "arveja", "choclo", "palta", "lenteja",
-];
-
 const SECCIONES = {
   comida: {
     ruta: "comidas", titulo: "Comidas", ejemplo: "Ej.: silpancho, quinua…",
+    icono: "🍽️", una: "Comida", varias: "comidas",
+    paraQue: "Escribe lo que tienes para cocinar", ejemploTengo: "Ej.: papas, carne, tomate",
     intro: "Platos bolivianos y del mundo. Filtra por los simples o los más nutritivos.",
     filtros: [
       ["todas", "Todas"], ["bolivianas", "Bolivianas"], ["internacionales", "Internacionales"],
@@ -33,6 +30,8 @@ const SECCIONES = {
   },
   bebida: {
     ruta: "bebidas", titulo: "Bebidas", ejemplo: "Ej.: mocochinchi, limón…",
+    icono: "🥤", una: "Bebida", varias: "bebidas",
+    paraQue: "Escribe lo que tienes para una bebida", ejemploTengo: "Ej.: leche, plátano, limón",
     intro: "Refrescos, jugos y bebidas calientes, y también tragos para los mayores.",
     filtros: [
       ["todas", "Todas"], ["sin-alcohol", "Sin alcohol"], ["con-alcohol", "Con alcohol"],
@@ -41,6 +40,8 @@ const SECCIONES = {
   },
   postre: {
     ruta: "postres", titulo: "Postres", ejemplo: "Ej.: buñuelos, leche…",
+    icono: "🍮", una: "Postre", varias: "postres",
+    paraQue: "Escribe lo que tienes para un postre", ejemploTengo: "Ej.: leche, huevo, harina",
     intro: "Dulces de casa: de los buñuelos al budín de pan.",
     filtros: [
       ["todas", "Todos"], ["bolivianas", "Bolivianos"], ["internacionales", "Internacionales"],
@@ -89,11 +90,24 @@ function esRecetaPropia(r) {
   );
 }
 
-const guardadoTengo = leerGuardado("recetario.tengo", []);
+/** Los ingredientes anotados, una lista por sección. */
+function leerTengo(guardado) {
+  const tengo = { comida: [], bebida: [], postre: [] };
+  // Antes había una sola lista para todo: pasa a ser la de comidas.
+  if (esLista(guardado)) return { ...tengo, comida: guardado };
+  if (guardado && typeof guardado === "object") {
+    for (const s of Object.keys(tengo)) if (esLista(guardado[s])) tengo[s] = guardado[s];
+  }
+  return tengo;
+}
+
 const guardadoMias = leerGuardado("recetario.mias", []);
+const guardadoBuscarEn = leerGuardado("recetario.buscarEn", "comida");
 
 const estado = {
-  tengo: esLista(guardadoTengo) ? guardadoTengo : [],
+  tengo: leerTengo(leerGuardado("recetario.tengo", null)),
+  // La sección en la que busca la pantalla "Qué tengo".
+  buscarEn: Object.hasOwn(SECCIONES, guardadoBuscarEn) ? guardadoBuscarEn : "comida",
   mias: Array.isArray(guardadoMias) ? guardadoMias.filter(esRecetaPropia) : [],
   filtro: { comida: "todas", bebida: "todas", postre: "todas" },
   texto: { comida: "", bebida: "", postre: "" },
@@ -166,36 +180,66 @@ const rejilla = (tarjetas) => h("ul", { class: "rejilla" }, tarjetas);
 
 // ───────────── Pantalla: ¿Qué tengo? ─────────────
 
+// Los ingredientes para tocar, los más usados de cada sección.
+const FRECUENTES = Object.fromEntries(
+  Object.keys(SECCIONES).map((s) => [
+    s, ingredientesFrecuentes(RECETAS.filter((r) => r.seccion === s), { cuantos: 18 }),
+  ]),
+);
+
 function vistaInicio() {
+  const etiqueta = h("label", { for: "ingrediente" });
   const entrada = h("input", {
     id: "ingrediente", type: "text", autocomplete: "off", autocapitalize: "none",
-    enterkeyhint: "done", placeholder: "Ej.: papas, carne, tomate",
-    "aria-describedby": "ayuda-ingrediente",
+    enterkeyhint: "done", "aria-describedby": "ayuda-ingrediente",
   });
+  const zonaSelector = h("div", { class: "selector", role: "group", "aria-labelledby": "titulo-selector" });
   const zonaTengo = h("div", { class: "zona-tengo" });
   const zonaFrecuentes = h("div", { class: "fichas" });
   const zonaResultados = h("div", { class: "resultados", "aria-live": "polite" });
 
-  function cambiar(tengo) {
-    estado.tengo = tengo;
-    guardar("recetario.tengo", tengo);
+  const mios = () => estado.tengo[estado.buscarEn];
+
+  function cambiar(lista) {
+    estado.tengo = { ...estado.tengo, [estado.buscarEn]: lista };
+    guardar("recetario.tengo", estado.tengo);
+    pintar();
+  }
+
+  function elegir(seccion) {
+    estado.buscarEn = seccion;
+    guardar("recetario.buscarEn", seccion);
     pintar();
   }
 
   function agregar(texto) {
     const nuevas = leerIngredientes(texto, CONOCIDOS)
-      .filter((c) => !BASICOS.includes(c) && !estado.tengo.includes(c));
-    if (nuevas.length) cambiar([...estado.tengo, ...nuevas]);
+      .filter((c) => !BASICOS.includes(c) && !mios().includes(c));
+    if (nuevas.length) cambiar([...mios(), ...nuevas]);
   }
 
-  const quitar = (clave) => cambiar(estado.tengo.filter((c) => c !== clave));
+  const quitar = (clave) => cambiar(mios().filter((c) => c !== clave));
 
   function pintar() {
+    const def = SECCIONES[estado.buscarEn];
+
+    zonaSelector.replaceChildren(
+      ...Object.entries(SECCIONES).map(([seccion, d]) =>
+        h("button", {
+          type: "button", class: "opcion",
+          "aria-pressed": String(seccion === estado.buscarEn),
+          onclick: () => elegir(seccion),
+        }, h("span", { class: "opcion-icono", "aria-hidden": "true" }, d.icono), d.una)),
+    );
+
+    etiqueta.textContent = def.paraQue;
+    entrada.placeholder = def.ejemploTengo;
+
     zonaTengo.replaceChildren(
-      ...(estado.tengo.length === 0 ? [] : [
+      ...(mios().length === 0 ? [] : [
         h("h2", { class: "subtitulo" }, "Tengo"),
         h("div", { class: "fichas" },
-          estado.tengo.map((c) =>
+          mios().map((c) =>
             h("button", {
               type: "button", class: "ficha ficha-puesta",
               "aria-label": `Quitar ${nombreBonito(c)}`, onclick: () => quitar(c),
@@ -205,18 +249,18 @@ function vistaInicio() {
       ]),
     );
 
-    const { nodos, total } = resultados();
+    const { nodos, total } = resultados(def);
     if (total > 0) {
       zonaTengo.append(
         h("button", {
           type: "button", class: "boton boton-ver",
           onclick: () => zonaResultados.scrollIntoView({ behavior: "smooth", block: "start" }),
-        }, total === 1 ? "Ver 1 receta posible ↓" : `Ver ${total} recetas posibles ↓`),
+        }, total === 1 ? `Ver 1 ${def.una.toLowerCase()} posible ↓` : `Ver ${total} ${def.varias} posibles ↓`),
       );
     }
 
     zonaFrecuentes.replaceChildren(
-      ...FRECUENTES.filter((c) => !estado.tengo.includes(c)).map((c) =>
+      ...FRECUENTES[estado.buscarEn].filter((c) => !mios().includes(c)).map((c) =>
         h("button", { type: "button", class: "ficha", onclick: () => agregar(c) },
           h("span", { "aria-hidden": "true" }, "+ "), mayuscula(nombreBonito(c)))),
     );
@@ -224,53 +268,70 @@ function vistaInicio() {
     zonaResultados.replaceChildren(...nodos);
   }
 
-  function resultados() {
-    if (estado.tengo.length === 0) {
+  function resultados(def) {
+    if (mios().length === 0) {
       return {
         total: 0,
         nodos: [
-          h("h2", { class: "subtitulo" }, "Mientras tanto, ideas para hoy"),
-          rejilla(ideasDeHoy().map((r) => tarjeta(r))),
+          h("h2", { class: "subtitulo" }, "Mientras tanto, ideas sencillas"),
+          rejilla(ideasSencillas(estado.buscarEn).map((r) => tarjeta(r))),
         ],
       };
     }
 
-    const encontrados = buscarPorIngredientes(todas(), estado.tengo);
+    const encontrados = buscarPorIngredientes(todas(), mios(), { seccion: estado.buscarEn });
     const conFalta = (x) =>
       h("span", { class: x.faltan.length ? "tarjeta-falta" : "tarjeta-falta tarjeta-completa" },
         x.faltan.length ? `Te falta: ${enLista(x.faltan)}` : "Tienes todo lo principal");
+    const tarjetas = (lista) => rejilla(lista.map((x) => tarjeta(x.receta, conFalta(x))));
 
-    const grupos = [
-      ["Puedes prepararlo ya", encontrados.filter((x) => x.faltan.length === 0)],
-      ["Te falta poco", encontrados.filter((x) => x.faltan.length >= 1 && x.faltan.length <= 2)],
-      ["Con algunas cosas más", encontrados.filter((x) => x.faltan.length > 2 && x.cobertura >= 0.3)],
-    ].filter(([, lista]) => lista.length > 0);
+    const listas = encontrados.filter((x) => x.faltan.length === 0);
+    const cerca = encontrados.filter((x) => x.faltan.length === 1);
+    const lejos = encontrados.filter(
+      (x) => x.faltan.length === 2 || (x.faltan.length > 2 && x.cobertura >= 0.3),
+    );
 
-    if (grupos.length === 0) {
+    if (listas.length + cerca.length + lejos.length === 0) {
       return {
         total: 0,
         nodos: [
           h("p", { class: "aviso" },
-            "No encontré recetas con eso. Prueba a agregar otro ingrediente o revisa cómo está escrito."),
+            `No encontré ${def.varias} con eso. Prueba a agregar otro ingrediente o revisa cómo está escrito.`),
         ],
       };
     }
 
-    const total = grupos.reduce((n, [, lista]) => n + lista.length, 0);
-    return {
-      total,
-      nodos: grupos.flatMap(([titulo, lista]) => [
-        h("h2", { class: "subtitulo" }, titulo),
-        rejilla(lista.map((x) => tarjeta(x.receta, conFalta(x)))),
-      ]),
-    };
+    const nodos = [];
+    if (listas.length) {
+      nodos.push(h("h2", { class: "subtitulo" }, "Puedes prepararlo ya"), tarjetas(listas));
+    } else {
+      nodos.push(h("p", { class: "aviso" },
+        "Con solo eso todavía no sale nada completo. Agrega otro ingrediente, o mira qué le falta a cada receta."));
+    }
+    if (cerca.length) {
+      nodos.push(h("h2", { class: "subtitulo" }, "Te falta una sola cosa"), tarjetas(cerca));
+    }
+    // Las que piden dos cosas o más quedan recogidas, para no tapar a las otras.
+    if (lejos.length) {
+      nodos.push(
+        h("details", { class: "mas-recetas", open: listas.length + cerca.length === 0 },
+          h("summary", {}, lejos.length === 1
+            ? "Ver 1 receta que necesita más cosas"
+            : `Ver ${lejos.length} recetas que necesitan más cosas`),
+          tarjetas(lejos)),
+      );
+    }
+
+    return { total: listas.length + cerca.length || lejos.length, nodos };
   }
 
   pintar();
 
   return h("div", { class: "vista" },
     h("h1", {}, "¿Qué tienes en casa?"),
-    h("p", { class: "intro" }, "Dime tus ingredientes y te muestro qué puedes cocinar con ellos."),
+    h("p", { class: "intro" }, "Elige qué quieres preparar, dime tus ingredientes y te muestro qué puedes hacer con ellos."),
+    h("h2", { class: "subtitulo", id: "titulo-selector" }, "¿Qué quieres preparar?"),
+    zonaSelector,
     h("form", {
       class: "buscador",
       onsubmit: (e) => {
@@ -279,7 +340,7 @@ function vistaInicio() {
         entrada.value = "";
       },
     },
-      h("label", { for: "ingrediente" }, "Escribe lo que tienes"),
+      etiqueta,
       h("div", { class: "fila" }, entrada, h("button", { type: "submit", class: "boton" }, "Agregar")),
       h("p", { id: "ayuda-ingrediente", class: "ayuda" },
         "Puedes escribir varios, separados por comas. Sal, aceite, agua, azúcar y ajo se dan por hechos."),
@@ -385,7 +446,8 @@ function vistaReceta(id) {
     r.porciones ? `🍽 ${r.porciones} ${r.porciones === 1 ? "porción" : "porciones"}` : null,
   ].filter(Boolean);
 
-  const faltan = estado.tengo.length ? r.claves.filter((c) => !estado.tengo.includes(c)) : null;
+  const mios = estado.tengo[r.seccion] ?? [];
+  const faltan = mios.length ? r.claves.filter((c) => !mios.includes(c)) : null;
 
   return h("article", { class: "vista receta" },
     h("a", { class: "volver", href: `#/${def.ruta}` }, `← ${def.titulo}`),
@@ -442,13 +504,30 @@ function vistaNoEncontrada() {
 
 // ───────────── Pantalla: Ideas (sugerencias y recetas propias) ─────────────
 
-/** Una comida, una bebida sin alcohol y un postre que cambian cada día. */
-function ideasDeHoy() {
+/** Los días pasados desde el 1 de enero de 2026: cambia las ideas cada día. */
+function numeroDeDia() {
   const hoy = new Date();
-  const dia = Math.floor(
+  return Math.floor(
     (Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()) - Date.UTC(2026, 0, 1)) / 86400000,
   );
-  const elegir = (lista, salto) => lista[(((dia * salto) % lista.length) + lista.length) % lista.length];
+}
+
+const resto = (n, largo) => ((n % largo) + largo) % largo;
+
+/** Tres recetas simples de una sección (sin alcohol), distintas cada día. */
+function ideasSencillas(seccion) {
+  const lista = RECETAS.filter(
+    (r) => r.seccion === seccion && r.etiquetas.includes("simple") && r.alcohol !== true,
+  );
+  const paso = Math.max(1, Math.floor(lista.length / 3));
+  const elegidas = [0, 1, 2].map((i) => lista[resto(numeroDeDia() * 2 + i * paso, lista.length)]);
+  return [...new Set(elegidas)];
+}
+
+/** Una comida, una bebida sin alcohol y un postre que cambian cada día. */
+function ideasDeHoy() {
+  const dia = numeroDeDia();
+  const elegir = (lista, salto) => lista[resto(dia * salto, lista.length)];
   return [
     elegir(RECETAS.filter((r) => r.seccion === "comida"), 7),
     elegir(RECETAS.filter((r) => r.seccion === "bebida" && r.alcohol === false), 3),
@@ -563,6 +642,54 @@ function vistaSugerencias() {
     ),
   );
 }
+
+// ───────────── Modo día y modo noche ─────────────
+
+// index.html ya puso el tema al cargar (el guardado o, si no hay, el del
+// sistema). Aquí solo se cambia con el botón y se recuerda la elección.
+const botonTema = document.getElementById("tema");
+const colorBarra = document.querySelector('meta[name="theme-color"]');
+
+function ponerTema(tema) {
+  const oscuro = tema === "oscuro";
+  document.documentElement.dataset.tema = oscuro ? "oscuro" : "claro";
+  colorBarra?.setAttribute("content", oscuro ? "#27201b" : "#a63d14");
+  if (!botonTema) return;
+  botonTema.replaceChildren(
+    h("span", { "aria-hidden": "true" }, oscuro ? "☀️" : "🌙"),
+    h("span", {}, oscuro ? "Día" : "Noche"),
+  );
+  botonTema.setAttribute("aria-label", oscuro ? "Cambiar a modo día" : "Cambiar a modo noche");
+  botonTema.hidden = false;
+}
+
+function temaGuardado() {
+  try {
+    const tema = localStorage.getItem("recetario.tema");
+    return tema === "claro" || tema === "oscuro" ? tema : null;
+  } catch {
+    return null;
+  }
+}
+
+const sistemaOscuro = window.matchMedia("(prefers-color-scheme: dark)");
+
+botonTema?.addEventListener("click", () => {
+  const nuevo = document.documentElement.dataset.tema === "oscuro" ? "claro" : "oscuro";
+  ponerTema(nuevo);
+  try {
+    localStorage.setItem("recetario.tema", nuevo);
+  } catch {
+    // Sin almacenamiento (modo privado): el cambio vale hasta cerrar la página.
+  }
+});
+
+// Mientras la persona no elija, sigue al sistema si este cambia.
+sistemaOscuro.addEventListener("change", (e) => {
+  if (!temaGuardado()) ponerTema(e.matches ? "oscuro" : "claro");
+});
+
+ponerTema(temaGuardado() ?? (sistemaOscuro.matches ? "oscuro" : "claro"));
 
 // ───────────── Rutas ─────────────
 

@@ -17,25 +17,26 @@
   --sombra: 0 1px 2px rgb(60 40 20 / 8%), 0 4px 14px rgb(60 40 20 / 6%);
   --radio: 14px;
   --alto-menu: 68px;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #1b1613;
-    --superficie: #27201b;
-    --texto: #f4ece1;
-    --suave: #c7b8a8;
-    --primario: #f29a6e;
-    --sobre-primario: #2a1508;
-    --borde: #43372e;
-    --ficha: #3a2f27;
-    --verde: #9ad7ab;
-    --verde-fondo: #1f3326;
-    --aviso-fondo: #3b2f1c;
-    --error: #ffb3b3;
-    --sombra: 0 1px 2px rgb(0 0 0 / 40%);
-  }
+/* Modo noche. index.html pone data-tema al cargar: el que eligió la persona
+   con el botón o, si no eligió, el del sistema. */
+:root[data-tema="oscuro"] {
+  --fondo: #1b1613;
+  --superficie: #27201b;
+  --texto: #f4ece1;
+  --suave: #c7b8a8;
+  --primario: #f29a6e;
+  --sobre-primario: #2a1508;
+  --borde: #43372e;
+  --ficha: #3a2f27;
+  --verde: #9ad7ab;
+  --verde-fondo: #1f3326;
+  --aviso-fondo: #3b2f1c;
+  --error: #ffb3b3;
+  --sombra: 0 1px 2px rgb(0 0 0 / 40%);
+  color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -74,8 +75,17 @@ main:focus { outline: none; }
 /* ── Cabecera y menú ── */
 
 .cabecera {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
   background: var(--superficie);
   border-bottom: 1px solid var(--borde);
+}
+
+.boton-tema {
+  display: inline-flex; align-items: center; gap: .4rem; flex: none;
+  min-height: 44px; margin-right: .75rem; padding: .3rem .9rem;
+  font: inherit; font-size: 1rem; font-weight: 600; color: var(--texto);
+  background: var(--ficha); border: 2px solid transparent; border-radius: 999px;
+  cursor: pointer;
 }
 
 .marca {
@@ -139,6 +149,20 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: none; border-color: var(--primario); border-radius: var(--radio);
 }
 
+/* Qué preparar: comida, bebida o postre. */
+.selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; max-width: 640px; margin-bottom: 1.25rem; }
+.opcion {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+  min-height: 76px; padding: .5rem .25rem;
+  font: inherit; font-weight: 700; color: var(--texto);
+  background: var(--superficie); border: 2px solid var(--borde); border-radius: var(--radio);
+  cursor: pointer;
+}
+.opcion-icono { font-size: 1.7rem; line-height: 1; }
+.opcion[aria-pressed="true"] {
+  background: var(--primario); border-color: var(--primario); color: var(--sobre-primario);
+}
+
 .buscador label { display: block; margin-bottom: .4rem; }
 .buscador-nombre { margin-top: 1.25rem; max-width: 520px; }
 .fila { display: flex; gap: .6rem; }
@@ -155,6 +179,18 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .boton-suave { background: transparent; color: var(--primario); }
 .boton-ver { margin-top: 1rem; width: 100%; max-width: 420px; }
 .resultados { scroll-margin-top: 80px; }
+
+.mas-recetas { margin-top: 1.75rem; }
+.mas-recetas summary {
+  display: flex; align-items: center; gap: .5rem;
+  min-height: 52px; padding: .5rem 1rem;
+  font-weight: 700; color: var(--primario);
+  background: var(--superficie); border: 2px solid var(--borde); border-radius: var(--radio);
+  cursor: pointer; list-style: none;
+}
+.mas-recetas summary::-webkit-details-marker { display: none; }
+.mas-recetas summary::before { content: "＋"; }
+.mas-recetas[open] summary::before { content: "－"; }
 
 .enlace {
   font: inherit; color: var(--primario); background: none; border: 0;
@@ -258,16 +294,17 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 
   .cabecera {
     position: sticky; top: 0; z-index: 20;
-    display: flex; align-items: center; justify-content: space-between;
     padding: 0 max(1rem, calc((100vw - 1100px) / 2));
   }
 
   .marca { padding-left: 0; }
 
   .menu {
-    position: static; display: flex; gap: .25rem;
+    position: static; display: flex; gap: .25rem; margin-left: auto;
     border: 0; padding: 0; background: none;
   }
+
+  .boton-tema { margin-right: 0; }
 
   .menu a {
     flex-direction: row; gap: .45rem;
@@ -283,5 +320,5 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .tarjeta, .ficha, .boton { transition: border-color .15s, background-color .15s; }
+  .tarjeta, .ficha, .boton, .opcion, .boton-tema { transition: border-color .15s, background-color .15s; }
 }

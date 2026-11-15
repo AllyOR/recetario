@@ -5,9 +5,13 @@ en la cocina. Sitio: <https://allyor.github.io/recetario/>
 
 ## Qué hace
 
-- **Qué tengo:** escribes o tocas los ingredientes que hay en casa (papas,
-  carne, tomate, cebolla) y muestra qué se puede cocinar (silpancho, pique
-  macho, filete encebollado), ordenado por lo que menos falta.
+- **Qué tengo:** eliges si quieres una comida, una bebida o un postre,
+  escribes o tocas los ingredientes que hay en casa (papas, carne, tomate,
+  cebolla) y muestra qué se puede preparar de esa sección (silpancho, pique
+  macho, filete encebollado), ordenado por lo que menos falta. Cada sección
+  guarda su propia lista de ingredientes.
+- **Modo día y modo noche:** el botón de la cabecera cambia entre los dos y
+  recuerda la elección; hasta entonces sigue al sistema.
 - **Comidas:** bolivianas e internacionales, con filtros de simples y nutritivas.
 - **Bebidas:** sin alcohol y con alcohol.
 - **Postres.**

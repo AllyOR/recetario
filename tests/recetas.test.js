@@ -60,8 +60,8 @@ test("el ejemplo del pedido: papas, carne, tomate y cebolla", () => {
   assert.deepEqual(tengo, ["papa", "carne", "tomate", "cebolla"]);
 
   const resultados = buscarPorIngredientes(RECETAS, tengo);
-  // Los tres platos del pedido salen en los grupos de arriba de la pantalla
-  // ("Puedes prepararlo ya" y "Te falta poco"): les faltan dos cosas o menos.
+  // Los tres platos del pedido salen: el filete completo, y al silpancho y al
+  // pique les faltan dos cosas (en pantalla, bajo "necesitan más cosas").
   // No se mira la posición exacta, que cambia cuando crece el catálogo.
   for (const id of ["silpancho", "pique-macho", "filete-encebollado"]) {
     const encontrado = resultados.find((x) => x.receta.id === id);
