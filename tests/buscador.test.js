@@ -5,6 +5,7 @@ import {
   normalizar,
   leerIngredientes,
   buscarPorIngredientes,
+  ingredientesFrecuentes,
 } from "../js/buscador.js";
 
 const CONOCIDOS = new Set([
@@ -92,4 +93,44 @@ test("buscar: deja fuera las recetas sin ninguna coincidencia", () => {
   const r = buscarPorIngredientes(RECETAS, ["papa"]);
   assert.ok(!r.some((x) => x.receta.id === "arroz-con-pollo"));
   assert.deepEqual(buscarPorIngredientes(RECETAS, []), []);
+});
+
+test("buscar: primero las recetas a las que les faltan menos cosas", () => {
+  const r = buscarPorIngredientes(RECETAS, ["papa", "arroz"]);
+  assert.deepEqual(
+    r.map((x) => x.receta.id),
+    ["papas-fritas", "arroz-con-pollo", "filete", "silpancho", "pique"],
+  );
+});
+
+test("buscar: a igualdad de ingredientes, primero la más rápida", () => {
+  const recetas = [
+    { id: "lenta", nombre: "Asado", minutos: 90, claves: ["carne", "papa"] },
+    { id: "rapida", nombre: "Bistec", minutos: 15, claves: ["carne", "papa"] },
+  ];
+  const r = buscarPorIngredientes(recetas, ["carne", "papa"]);
+  assert.deepEqual(r.map((x) => x.receta.id), ["rapida", "lenta"]);
+});
+
+test("buscar: con una sección, solo salen recetas de esa sección", () => {
+  const recetas = [
+    { id: "crema", nombre: "Crema de zanahoria", seccion: "comida", claves: ["zanahoria", "papa"] },
+    { id: "jugo", nombre: "Jugo de zanahoria", seccion: "bebida", claves: ["zanahoria", "naranja"] },
+    { id: "torta", nombre: "Torta de zanahoria", seccion: "postre", claves: ["zanahoria", "harina"] },
+  ];
+  const ids = (seccion) =>
+    buscarPorIngredientes(recetas, ["zanahoria"], { seccion }).map((x) => x.receta.id);
+  assert.deepEqual(ids("comida"), ["crema"]);
+  assert.deepEqual(ids("bebida"), ["jugo"]);
+  assert.deepEqual(ids("postre"), ["torta"]);
+  assert.equal(buscarPorIngredientes(recetas, ["zanahoria"]).length, 3);
+});
+
+test("ingredientesFrecuentes: los más usados primero, sin básicos", () => {
+  const frecuentes = ingredientesFrecuentes(RECETAS, { cuantos: 3 });
+  assert.deepEqual(frecuentes, ["papa", "carne", "cebolla"]);
+  assert.deepEqual(
+    ingredientesFrecuentes(RECETAS, { cuantos: 2, excluir: ["papa"] }),
+    ["carne", "cebolla"],
+  );
 });

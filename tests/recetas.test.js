@@ -22,7 +22,7 @@ test("cada receta está completa y bien formada", () => {
     for (const e of r.etiquetas) assert.ok(["simple", "nutritiva"].includes(e), donde);
     assert.ok(Number.isInteger(r.minutos) && r.minutos > 0, donde);
     assert.ok(Number.isInteger(r.porciones) && r.porciones > 0, donde);
-    assert.ok(r.claves.length >= 2, donde);
+    assert.ok(r.claves.length >= 1, donde);
     assert.ok(r.ingredientes.length >= 2, donde);
     assert.ok(r.pasos.length >= 2, donde);
     if (r.seccion === "bebida") assert.equal(typeof r.alcohol, "boolean", donde);
@@ -70,4 +70,47 @@ test("el ejemplo del pedido: papas, carne, tomate y cebolla", () => {
   }
   assert.equal(resultados[0].receta.id, "filete-encebollado");
   assert.deepEqual(resultados[0].faltan, []);
+});
+
+const enSeccion = (texto, seccion) =>
+  buscarPorIngredientes(RECETAS, leerIngredientes(texto, CONOCIDOS), { seccion });
+
+test("pedir comida con zanahoria no trae bebidas ni postres", () => {
+  const resultados = enSeccion("zanahoria", "comida");
+  assert.ok(resultados.length > 0);
+  for (const x of resultados) assert.equal(x.receta.seccion, "comida", x.receta.id);
+  assert.ok(enSeccion("zanahoria", "bebida").some((x) => x.receta.id === "jugo-zanahoria-naranja"));
+});
+
+test("hay bastantes recetas de pocos ingredientes en cada sección", () => {
+  const pocas = (seccion) =>
+    RECETAS.filter((r) => r.seccion === seccion && r.claves.length <= 3).length;
+  assert.ok(pocas("comida") >= 40, `comidas: ${pocas("comida")}`);
+  assert.ok(pocas("bebida") >= 25, `bebidas: ${pocas("bebida")}`);
+  assert.ok(pocas("postre") >= 18, `postres: ${pocas("postre")}`);
+});
+
+test("con un solo ingrediente común ya salen comidas cercanas", () => {
+  const comunes = [
+    "zanahoria", "papa", "huevo", "arroz", "pollo", "carne", "tomate",
+    "fideo", "queso", "cebolla", "pan",
+  ];
+  for (const ingrediente of comunes) {
+    const cerca = enSeccion(ingrediente, "comida").filter((x) => x.faltan.length <= 1);
+    assert.ok(cerca.length >= 3, `${ingrediente}: solo ${cerca.map((x) => x.receta.id)}`);
+  }
+});
+
+test("con dos o tres ingredientes comunes hay algo para preparar ya", () => {
+  const casos = [
+    ["papa, huevo", "comida"], ["arroz, huevo", "comida"], ["tomate, cebolla", "comida"],
+    ["fideo, tomate", "comida"], ["carne, arroz", "comida"], ["pollo, papa, cebolla", "comida"],
+    ["zanahoria, papa, cebolla", "comida"], ["pan, queso", "comida"],
+    ["leche, plátano", "bebida"], ["limón", "bebida"], ["naranja", "bebida"],
+    ["pan, huevo, leche", "postre"], ["manzana, canela", "postre"], ["harina, huevo, leche", "postre"],
+  ];
+  for (const [texto, seccion] of casos) {
+    const listas = enSeccion(texto, seccion).filter((x) => x.faltan.length === 0);
+    assert.ok(listas.length >= 1, `${seccion} con ${texto}: nada completo`);
+  }
 });
