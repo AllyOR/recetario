@@ -1,0 +1,10 @@
+{
+  "name": "recetario",
+  "private": true,
+  "type": "module",
+  "description": "Recetario: recetas bolivianas e internacionales, con buscador por ingredientes.",
+  "scripts": {
+    "test": "node --test",
+    "start": "python3 -m http.server 8123"
+  }
+}
