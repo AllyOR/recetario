@@ -94,6 +94,8 @@ const CON_TILDE = {
   "leche de coco": "leche de coco", jengibre: "jengibre", brocoli: "brócoli",
   champiñon: "champiñón", "maiz morado": "maíz morado", linaza: "linaza",
   "agua con gas": "agua con gas", "limon sutil": "limón sutil",
+  corazon: "corazón", "almidon de yuca": "almidón de yuca",
+  "maiz partido": "maíz partido",
 };
 
 /** Minúsculas, sin tildes (conserva la ñ), sin signos, espacios simples. */

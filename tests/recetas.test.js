@@ -60,9 +60,13 @@ test("el ejemplo del pedido: papas, carne, tomate y cebolla", () => {
   assert.deepEqual(tengo, ["papa", "carne", "tomate", "cebolla"]);
 
   const resultados = buscarPorIngredientes(RECETAS, tengo);
-  const primeros = resultados.slice(0, 6).map((x) => x.receta.id);
+  // Los tres platos del pedido salen en los grupos de arriba de la pantalla
+  // ("Puedes prepararlo ya" y "Te falta poco"): les faltan dos cosas o menos.
+  // No se mira la posición exacta, que cambia cuando crece el catálogo.
   for (const id of ["silpancho", "pique-macho", "filete-encebollado"]) {
-    assert.ok(primeros.includes(id), `${id} no está entre los primeros: ${primeros}`);
+    const encontrado = resultados.find((x) => x.receta.id === id);
+    assert.ok(encontrado, `${id} no aparece en los resultados`);
+    assert.ok(encontrado.faltan.length <= 2, `${id}: faltan ${encontrado.faltan}`);
   }
   assert.equal(resultados[0].receta.id, "filete-encebollado");
   assert.deepEqual(resultados[0].faltan, []);
