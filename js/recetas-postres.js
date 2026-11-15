@@ -460,4 +460,193 @@ export const POSTRES = [
       "Hornea 12 a 14 minutos, hasta que los bordes doren.",
     ],
   },
+
+  // ── Sencillos, de pocos ingredientes ──
+
+  {
+    id: "tostadas-francesas", nombre: "Tostadas francesas", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 15, porciones: 4, emoji: "🍞",
+    descripcion: "Pan del día anterior, dorado con huevo y leche.",
+    claves: ["pan", "huevo", "leche"],
+    ingredientes: [
+      "8 rebanadas de pan",
+      "2 huevos",
+      "1 taza de leche",
+      "2 cucharadas de azúcar, canela si hay y aceite o mantequilla",
+    ],
+    pasos: [
+      "Bate los huevos con la leche y el azúcar.",
+      "Remoja cada rebanada unos segundos por lado.",
+      "Dóralas en una sartén con poco aceite, 2 minutos por lado. Espolvorea azúcar.",
+    ],
+  },
+  {
+    id: "platanos-fritos", nombre: "Plátanos fritos con canela", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 10, porciones: 4, emoji: "🍌",
+    descripcion: "Plátano maduro dorado, con azúcar y canela.",
+    claves: ["platano", "canela"],
+    ingredientes: [
+      "3 plátanos maduros",
+      "2 cucharadas de aceite",
+      "2 cucharadas de azúcar",
+      "1 cucharadita de canela molida",
+    ],
+    pasos: [
+      "Pela los plátanos y córtalos a lo largo.",
+      "Dóralos en el aceite, 2 minutos por lado.",
+      "Espolvorea con el azúcar y la canela.",
+    ],
+  },
+  {
+    id: "natilla-de-maicena", nombre: "Natilla de maicena", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 15, porciones: 4, emoji: "🍮",
+    descripcion: "Crema dulce de leche, de las de antes.",
+    claves: ["leche", "maicena", "canela"],
+    ingredientes: [
+      "3 tazas de leche",
+      "3 cucharadas de maicena",
+      "5 cucharadas de azúcar",
+      "1 rama de canela",
+    ],
+    pasos: [
+      "Disuelve la maicena en media taza de leche fría.",
+      "Calienta el resto de la leche con el azúcar y la canela.",
+      "Añade la maicena y remueve sin parar 5 minutos, hasta que espese.",
+      "Reparte en vasitos y deja enfriar.",
+    ],
+  },
+  {
+    id: "frutillas-con-crema", nombre: "Frutillas con crema", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 10, porciones: 4, emoji: "🍓",
+    descripcion: "Dos ingredientes y un poco de azúcar.",
+    claves: ["frutilla", "crema"],
+    ingredientes: [
+      "500 g de frutillas",
+      "1 taza de crema de leche fría",
+      "3 cucharadas de azúcar",
+    ],
+    pasos: [
+      "Lava las frutillas, quítales las hojas y córtalas.",
+      "Bate la crema con el azúcar hasta que espese.",
+      "Sirve las frutillas con la crema encima.",
+    ],
+  },
+  {
+    id: "compota-de-manzana", nombre: "Compota de manzana", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], minutos: 25, porciones: 4, emoji: "🍎",
+    descripcion: "Manzana cocida con canela. Suave para chicos y abuelos.",
+    claves: ["manzana", "canela"],
+    ingredientes: [
+      "4 manzanas peladas en trozos",
+      "1 taza de agua",
+      "3 cucharadas de azúcar",
+      "1 rama de canela",
+    ],
+    pasos: [
+      "Pon todo en una olla.",
+      "Cocina a fuego bajo 20 minutos, hasta que la manzana se deshaga.",
+      "Aplasta con un tenedor y sirve tibia o fría.",
+    ],
+  },
+  {
+    id: "panqueques-sencillos", nombre: "Panqueques sencillos", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 20, porciones: 4, emoji: "🥞",
+    descripcion: "La masa básica: se comen con azúcar, miel o fruta.",
+    claves: ["harina", "huevo", "leche"],
+    ingredientes: [
+      "1 taza de harina",
+      "2 huevos",
+      "1½ tazas de leche",
+      "1 cucharada de azúcar, una pizca de sal y aceite",
+    ],
+    pasos: [
+      "Bate todo hasta que no queden grumos. Deja reposar 5 minutos.",
+      "Calienta una sartén con unas gotas de aceite y vierte un cucharón de masa.",
+      "Cocina 1 minuto por lado. Sirve con azúcar o miel.",
+    ],
+  },
+  {
+    id: "queque-casero", nombre: "Queque casero", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 50, porciones: 8, emoji: "🍰",
+    descripcion: "El queque de siempre para el té.",
+    claves: ["harina", "huevo", "mantequilla"],
+    ingredientes: [
+      "2 tazas de harina",
+      "3 huevos",
+      "100 g de mantequilla blanda",
+      "1 taza de azúcar",
+      "½ taza de agua o leche y 2 cucharaditas de polvo de hornear",
+    ],
+    pasos: [
+      "Calienta el horno a 180 °C y engrasa un molde.",
+      "Bate la mantequilla con el azúcar y añade los huevos de uno en uno.",
+      "Incorpora la harina con el polvo de hornear, alternando con el agua.",
+      "Hornea 35 a 40 minutos, hasta que un palito salga seco.",
+    ],
+  },
+  {
+    id: "bolitas-de-galleta", nombre: "Bolitas de galleta y coco", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 20, porciones: 6, emoji: "🍪",
+    descripcion: "Sin horno, y los chicos pueden ayudar.",
+    claves: ["galleta", "leche condensada", "coco"],
+    ingredientes: [
+      "1 paquete de galletas María (200 g)",
+      "½ lata de leche condensada",
+      "1 taza de coco rallado",
+    ],
+    pasos: [
+      "Muele las galletas hasta hacerlas polvo.",
+      "Mezcla con la leche condensada hasta formar una masa.",
+      "Forma bolitas, pásalas por el coco y enfría 15 minutos.",
+    ],
+  },
+  {
+    id: "duraznos-en-almibar", nombre: "Duraznos en almíbar", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 30, porciones: 4, emoji: "🍑",
+    descripcion: "Duraznos cocidos en su jarabe con canela.",
+    claves: ["durazno", "canela"],
+    ingredientes: [
+      "6 duraznos pelados",
+      "3 tazas de agua",
+      "1 taza de azúcar",
+      "1 rama de canela",
+    ],
+    pasos: [
+      "Hierve el agua con el azúcar y la canela 5 minutos.",
+      "Añade los duraznos y cocina 20 minutos a fuego bajo.",
+      "Deja enfriar en el almíbar.",
+    ],
+  },
+  {
+    id: "yogur-con-fruta", nombre: "Yogur con fruta y avena", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], minutos: 5, porciones: 2, emoji: "🥣",
+    descripcion: "Postre o desayuno sin cocinar.",
+    claves: ["yogur", "platano", "avena"],
+    ingredientes: [
+      "2 tazas de yogur",
+      "2 plátanos en rodajas",
+      "4 cucharadas de avena",
+      "Miel (opcional)",
+    ],
+    pasos: [
+      "Reparte el yogur en dos vasos.",
+      "Pon encima el plátano y la avena.",
+      "Añade un hilo de miel si quieres.",
+    ],
+  },
+  {
+    id: "helado-de-platano", nombre: "Helado de plátano", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], minutos: 10, porciones: 2, emoji: "🍦",
+    descripcion: "Plátano congelado y licuado: cremoso sin heladera.",
+    claves: ["platano", "leche"],
+    ingredientes: [
+      "3 plátanos maduros",
+      "4 cucharadas de leche",
+    ],
+    pasos: [
+      "Pela los plátanos, córtalos en rodajas y congélalos al menos 3 horas.",
+      "Licúalos con la leche, parando para remover, hasta que quede cremoso.",
+      "Sirve enseguida.",
+    ],
+  },
 ];

@@ -512,4 +512,221 @@ export const BEBIDAS = [
       "Completa con la cerveza, despacio.",
     ],
   },
+
+  // ── Sencillas, de pocos ingredientes ──
+
+  {
+    id: "limonada", nombre: "Limonada", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple"], alcohol: false, minutos: 5, porciones: 4, emoji: "🍋",
+    descripcion: "Limón, agua y azúcar. Nada más.",
+    claves: ["limon"],
+    ingredientes: [
+      "4 limones",
+      "1 litro de agua fría",
+      "4 cucharadas de azúcar",
+      "Hielo",
+    ],
+    pasos: [
+      "Exprime los limones.",
+      "Mezcla el jugo con el agua y el azúcar hasta que se disuelva.",
+      "Sirve con hielo.",
+    ],
+  },
+  {
+    id: "jugo-de-naranja", nombre: "Jugo de naranja", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], alcohol: false, minutos: 5, porciones: 2, emoji: "🍊",
+    descripcion: "Recién exprimido, para el desayuno.",
+    claves: ["naranja"],
+    ingredientes: [
+      "6 naranjas",
+      "Hielo (opcional)",
+    ],
+    pasos: [
+      "Corta las naranjas por la mitad.",
+      "Exprímelas y cuela el jugo si no te gusta la pulpa.",
+      "Sirve enseguida.",
+    ],
+  },
+  {
+    id: "jugo-de-pina", nombre: "Jugo de piña", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], alcohol: false, minutos: 10, porciones: 4, emoji: "🍍",
+    descripcion: "Piña licuada con agua, bien fría.",
+    claves: ["piña"],
+    ingredientes: [
+      "½ piña madura pelada",
+      "3 tazas de agua fría",
+      "Azúcar al gusto",
+      "Hielo",
+    ],
+    pasos: [
+      "Corta la piña en trozos.",
+      "Licúala con el agua y el azúcar.",
+      "Cuela y sirve con hielo.",
+    ],
+  },
+  {
+    id: "licuado-de-platano", nombre: "Licuado de plátano", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], alcohol: false, minutos: 5, porciones: 2, emoji: "🍌",
+    descripcion: "Plátano con leche: un desayuno en un vaso.",
+    claves: ["platano", "leche"],
+    ingredientes: [
+      "2 plátanos maduros",
+      "2 tazas de leche fría",
+      "Azúcar al gusto",
+    ],
+    pasos: [
+      "Pela los plátanos y trocéalos.",
+      "Licúa con la leche y el azúcar.",
+      "Sirve enseguida, antes de que se oscurezca.",
+    ],
+  },
+  {
+    id: "licuado-de-frutilla", nombre: "Licuado de frutilla", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], alcohol: false, minutos: 5, porciones: 2, emoji: "🍓",
+    descripcion: "Rosado y cremoso.",
+    claves: ["frutilla", "leche"],
+    ingredientes: [
+      "2 tazas de frutillas lavadas",
+      "2 tazas de leche fría",
+      "2 cucharadas de azúcar",
+    ],
+    pasos: [
+      "Quita las hojas a las frutillas.",
+      "Licúa con la leche y el azúcar.",
+      "Sirve frío.",
+    ],
+  },
+  {
+    id: "licuado-de-papaya", nombre: "Licuado de papaya", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], alcohol: false, minutos: 5, porciones: 2, emoji: "🥭",
+    descripcion: "Suave y bueno para la digestión.",
+    claves: ["papaya", "leche"],
+    ingredientes: [
+      "2 tazas de papaya en trozos",
+      "2 tazas de leche fría",
+      "Azúcar al gusto",
+    ],
+    pasos: [
+      "Pela la papaya y quita las semillas.",
+      "Licúa con la leche y el azúcar.",
+      "Sirve enseguida.",
+    ],
+  },
+  {
+    id: "leche-con-canela", nombre: "Leche con canela", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple"], alcohol: false, minutos: 10, porciones: 2, emoji: "🥛",
+    descripcion: "Leche caliente perfumada, para antes de dormir.",
+    claves: ["leche", "canela"],
+    ingredientes: [
+      "2 tazas de leche",
+      "1 rama de canela",
+      "Azúcar al gusto",
+    ],
+    pasos: [
+      "Calienta la leche con la canela a fuego bajo, sin que hierva fuerte, 8 minutos.",
+      "Retira la canela y endulza.",
+      "Sirve caliente.",
+    ],
+  },
+  {
+    id: "te-helado-con-limon", nombre: "Té helado con limón", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple"], alcohol: false, minutos: 15, porciones: 4, emoji: "🧋",
+    descripcion: "Té frío con limón para la tarde.",
+    claves: ["te", "limon"],
+    ingredientes: [
+      "3 bolsitas de té",
+      "1 litro de agua",
+      "El jugo de 2 limones",
+      "Azúcar al gusto y hielo",
+    ],
+    pasos: [
+      "Hierve 2 tazas de agua, apaga y deja el té 5 minutos. Retira las bolsitas.",
+      "Endulza y añade el resto del agua, fría, y el limón.",
+      "Sirve con mucho hielo.",
+    ],
+  },
+  {
+    id: "te-con-leche", nombre: "Té con leche", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple"], alcohol: false, minutos: 5, porciones: 2, emoji: "☕",
+    descripcion: "Para el desayuno o la hora del té.",
+    claves: ["te", "leche"],
+    ingredientes: [
+      "2 bolsitas de té",
+      "1 taza de agua",
+      "1 taza de leche",
+      "Azúcar al gusto",
+    ],
+    pasos: [
+      "Hierve el agua y deja el té 3 minutos.",
+      "Calienta la leche aparte.",
+      "Mezcla, endulza y sirve.",
+    ],
+  },
+  {
+    id: "avena-con-leche", nombre: "Avena con leche", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple", "nutritiva"], alcohol: false, minutos: 15, porciones: 4, emoji: "🥣",
+    descripcion: "Bebida espesa y caliente que alimenta.",
+    claves: ["avena", "leche", "canela"],
+    ingredientes: [
+      "½ taza de avena",
+      "2 tazas de agua",
+      "2 tazas de leche",
+      "1 rama de canela y azúcar al gusto",
+    ],
+    pasos: [
+      "Hierve la avena con el agua y la canela 8 minutos, removiendo.",
+      "Añade la leche y el azúcar y cocina 3 minutos más.",
+      "Sirve caliente, o licuada y fría.",
+    ],
+  },
+  {
+    id: "refresco-de-manzana", nombre: "Refresco de manzana", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple"], alcohol: false, minutos: 25, porciones: 6, emoji: "🍎",
+    descripcion: "Manzana hervida con canela, para tomar fría.",
+    claves: ["manzana", "canela"],
+    ingredientes: [
+      "3 manzanas en trozos, con cáscara",
+      "1½ litros de agua",
+      "1 rama de canela",
+      "Azúcar al gusto",
+    ],
+    pasos: [
+      "Hierve las manzanas con el agua y la canela 20 minutos.",
+      "Endulza y deja enfriar.",
+      "Cuela, o licúa para que quede espeso, y sirve frío.",
+    ],
+  },
+  {
+    id: "destornillador", nombre: "Destornillador", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple"], alcohol: true, minutos: 5, porciones: 1, emoji: "🍊",
+    descripcion: "Vodka con jugo de naranja.",
+    claves: ["vodka", "naranja"],
+    ingredientes: [
+      "45 ml de vodka",
+      "El jugo de 2 naranjas",
+      "Hielo",
+    ],
+    pasos: [
+      "Llena un vaso con hielo.",
+      "Vierte el vodka y completa con el jugo.",
+      "Remueve y sirve.",
+    ],
+  },
+  {
+    id: "tinto-de-verano", nombre: "Tinto de verano", seccion: "bebida", origen: "internacional",
+    etiquetas: ["simple"], alcohol: true, minutos: 5, porciones: 2, emoji: "🍷",
+    descripcion: "Vino tinto con gaseosa y limón, muy frío.",
+    claves: ["vino", "agua con gas", "limon"],
+    ingredientes: [
+      "1 taza de vino tinto",
+      "1 taza de agua con gas o gaseosa de limón",
+      "2 rodajas de limón",
+      "Hielo y azúcar al gusto",
+    ],
+    pasos: [
+      "Llena dos vasos con hielo.",
+      "Reparte el vino y completa con el agua con gas.",
+      "Endulza si hace falta y añade el limón.",
+    ],
+  },
 ];
