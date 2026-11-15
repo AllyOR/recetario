@@ -20,7 +20,8 @@ Las recetas propias se guardan solo en el navegador de quien las escribe
 ## Cómo está hecho
 
 Sitio estático: HTML, CSS y JavaScript sin dependencias ni paso de compilación.
-GitHub Pages lo sirve tal cual desde la rama `main`.
+GitHub Pages lo sirve tal cual desde la rama `gh-pages`, que es la única rama:
+lo que se sube ahí queda publicado en un par de minutos.
 
 | Archivo | Qué contiene |
 |---|---|
