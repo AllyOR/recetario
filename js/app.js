@@ -109,7 +109,9 @@ const guardadoBuscarEn = leerGuardado("recetario.buscarEn", "comida");
 const guardadoMenu = leerGuardado("recetario.menu", null);
 const guardadoCompras = leerGuardado("recetario.compras", []);
 const guardadoPersonas = leerGuardado("recetario.personas", null);
-const PERSONAS_MAXIMAS = 12;
+// Para cuántas personas se puede armar el menú de la semana.
+const OPCIONES_PERSONAS = [1, 2, 3, 4, 5, 6, 12];
+const PERSONAS_SI_NO_ELIGE = 4;
 
 const estado = {
   tengo: leerTengo(leerGuardado("recetario.tengo", null)),
@@ -120,11 +122,10 @@ const estado = {
   // de compras. Si el menú guardado dejó de servir, se arma otro al entrar.
   menu: menuValido(RECETAS, guardadoMenu) ? guardadoMenu : null,
   compras: esLista(guardadoCompras) ? guardadoCompras : [],
-  // Para cuántas personas se cocina el menú; null = lo que dice cada receta.
-  personas:
-    Number.isInteger(guardadoPersonas) && guardadoPersonas >= 1 && guardadoPersonas <= PERSONAS_MAXIMAS
-      ? guardadoPersonas
-      : null,
+  // Para cuántas personas se cocina el menú de la semana.
+  personas: OPCIONES_PERSONAS.includes(guardadoPersonas) ? guardadoPersonas : PERSONAS_SI_NO_ELIGE,
+  // Si quedó abierta la lista de "recetas que necesitan más cosas".
+  verMas: { comida: false, bebida: false, postre: false },
   filtro: { comida: "todas", bebida: "todas", postre: "todas" },
   texto: { comida: "", bebida: "", postre: "" },
 };
@@ -328,9 +329,17 @@ function vistaInicio() {
       nodos.push(h("h2", { class: "subtitulo" }, "Te falta una sola cosa"), tarjetas(cerca));
     }
     // Las que piden dos cosas o más quedan recogidas, para no tapar a las otras.
+    const soloHayLejos = listas.length + cerca.length === 0;
+    const seccion = estado.buscarEn;
     if (lejos.length) {
       nodos.push(
-        h("details", { class: "mas-recetas", open: listas.length + cerca.length === 0 },
+        h("details", {
+          class: "mas-recetas",
+          open: soloHayLejos || estado.verMas[seccion],
+          // Se recuerda abierto, para encontrarlo igual al volver de una receta
+          // (salvo cuando se abre solo porque no hay nada más cerca).
+          ontoggle: (e) => { if (!soloHayLejos) estado.verMas[seccion] = e.currentTarget.open; },
+        },
           h("summary", {}, lejos.length === 1
             ? "Ver 1 receta que necesita más cosas"
             : `Ver ${lejos.length} recetas que necesitan más cosas`),
@@ -466,7 +475,7 @@ function vistaReceta(id) {
 
   // Un plato del menú de la semana se muestra para las personas elegidas ahí.
   const ajustada =
-    estado.personas && r.porciones && estado.personas !== r.porciones && estado.menu?.includes(r.id);
+    r.porciones && estado.personas !== r.porciones && estado.menu?.includes(r.id);
   const porciones = ajustada ? estado.personas : r.porciones;
   const factor = ajustada ? estado.personas / r.porciones : 1;
 
@@ -479,7 +488,11 @@ function vistaReceta(id) {
   const faltan = mios.length ? r.claves.filter((c) => !mios.includes(c)) : null;
 
   return h("article", { class: "vista receta" },
-    h("a", { class: "volver", href: `#/${def.ruta}` }, `← ${def.titulo}`),
+    // Si se llegó desde otra pantalla del recetario, se vuelve a ella tal como
+    // estaba; si se abrió el enlace directo, a la sección de la receta.
+    pasoEnHistorial > 0
+      ? h("button", { type: "button", class: "volver", onclick: () => history.back() }, "← Volver")
+      : h("a", { class: "volver", href: `#/${def.ruta}` }, `← ${def.titulo}`),
     h("div", { class: "receta-cabeza" },
       h("span", { class: "receta-emoji", "aria-hidden": "true" }, r.emoji),
       h("div", {},
@@ -559,17 +572,14 @@ function vistaMenu() {
   const corto = (dia) => DIAS[dia].slice(0, 3).toLowerCase();
 
   const personas = h("select", { id: "menu-personas" },
-    h("option", { value: "" }, "Lo que dice cada receta"),
-    Array.from({ length: PERSONAS_MAXIMAS }, (_, i) =>
-      h("option", { value: String(i + 1) }, i === 0 ? "1 persona" : `${i + 1} personas`)));
-  personas.value = estado.personas ? String(estado.personas) : "";
+    OPCIONES_PERSONAS.map((n) => h("option", { value: String(n) }, n === 1 ? "1 persona" : `${n} personas`)));
+  personas.value = String(estado.personas);
   personas.addEventListener("change", () => {
-    estado.personas = personas.value ? Number(personas.value) : null;
+    estado.personas = Number(personas.value);
     guardar("recetario.personas", estado.personas);
     pintar();
-    novedad.textContent = estado.personas
-      ? `Cantidades ajustadas para ${estado.personas} ${estado.personas === 1 ? "persona" : "personas"}.`
-      : "Cantidades como las dice cada receta.";
+    novedad.textContent =
+      `Cantidades ajustadas para ${estado.personas} ${estado.personas === 1 ? "persona" : "personas"}.`;
   });
 
   function guardarMenu(menu, lista) {
@@ -605,7 +615,7 @@ function vistaMenu() {
           h("span", {},
             h("span", { class: "tarjeta-nombre" }, r.nombre),
             h("span", { class: "tarjeta-meta" },
-              `${r.minutos} min · para ${estado.personas ?? r.porciones}${r.etiquetas.includes("nutritiva") ? " · nutritiva" : ""}`),
+              `${r.minutos} min · para ${estado.personas}${r.etiquetas.includes("nutritiva") ? " · nutritiva" : ""}`),
           ),
         ),
         h("button", {
@@ -626,11 +636,9 @@ function vistaMenu() {
   function pintarLista() {
     const lista = laLista();
     const enCasa = estado.tengo.comida;
-    ayudaLista.textContent = (lista.personas
-      ? `Junta lo que piden los siete platos, con las cantidades ajustadas para ${lista.personas} ` +
-        `${lista.personas === 1 ? "persona" : "personas"} y redondeadas. `
-      : "Junta lo que piden los siete platos, con las cantidades de cada receta (cada plato dice para cuántos rinde). ") +
-      "Marca lo que ya tienes o ya compraste.";
+    ayudaLista.textContent =
+      `Junta lo que piden los siete platos, con las cantidades ajustadas para ${lista.personas} ` +
+      `${lista.personas === 1 ? "persona" : "personas"} y redondeadas. Marca lo que ya tienes o ya compraste.`;
 
     const renglon = (item) => {
       const casilla = h("input", { type: "checkbox", checked: estado.compras.includes(item.clave) });
@@ -920,6 +928,11 @@ const posiciones = new Map();
 let rutaPintada = null;
 let vinoPorEnlace = false;
 
+// Cada pantalla visitada lleva su número de orden en el historial del
+// navegador: así una receta sabe si hay una pantalla del recetario detrás.
+if (history.state?.n == null) history.replaceState({ n: 0 }, "");
+let pasoEnHistorial = history.state.n;
+
 function leerRuta() {
   const partes = location.hash.replace(/^#\/?/, "").split("/");
   let id = partes.slice(1).join("/");
@@ -933,6 +946,10 @@ function leerRuta() {
 
 function pintarRuta() {
   if (rutaPintada !== null) posiciones.set(rutaPintada, window.scrollY);
+
+  // Una pantalla nueva no trae número; al volver atrás ya lo tiene.
+  if (history.state?.n == null) history.replaceState({ n: pasoEnHistorial + 1 }, "");
+  pasoEnHistorial = history.state.n;
 
   const { parte, id } = leerRuta();
   let vista;

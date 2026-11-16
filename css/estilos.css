@@ -145,6 +145,16 @@ input[type="text"], input[type="search"], input[type="number"], select, textarea
   border: 2px solid var(--borde); border-radius: var(--radio);
 }
 textarea { resize: vertical; line-height: 1.45; }
+/* La flecha del desplegable es propia: la del sistema no combina con el borde. */
+select {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 2.8rem; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2365554a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 1rem center; background-size: 1rem;
+}
+:root[data-tema="oscuro"] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23c7b8a8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l5 5 5-5'/%3E%3C/svg%3E");
+}
 input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: none; border-color: var(--primario); border-radius: var(--radio);
 }
@@ -284,6 +294,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 
 .receta { max-width: 760px; }
 .volver { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none; }
+button.volver { font: inherit; font-weight: 600; color: var(--primario); background: none; border: 0; padding: 0; cursor: pointer; }
 .receta-cabeza { display: flex; gap: 1rem; align-items: center; margin: .5rem 0 1rem; }
 .receta-emoji { font-size: 3.4rem; line-height: 1; }
 .receta-datos { font-weight: 600; margin: 0 0 1rem; }
