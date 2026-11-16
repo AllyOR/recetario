@@ -134,3 +134,15 @@ test("ingredientesFrecuentes: los más usados primero, sin básicos", () => {
     ["carne", "cebolla"],
   );
 });
+
+test("ingredientesFrecuentes agrega al final los que se piden siempre", () => {
+  const recetas = [
+    { claves: ["papa", "carne"] }, { claves: ["papa", "huevo"] }, { claves: ["carne", "camote"] },
+  ];
+  // Los dos más usados, y después los pedidos que no estaban, sin repetir.
+  assert.deepEqual(
+    ingredientesFrecuentes(recetas, { cuantos: 2, siempre: ["camote", "papa", "yuca"] }),
+    ["carne", "papa", "camote", "yuca"],
+  );
+  assert.deepEqual(ingredientesFrecuentes(recetas, { cuantos: 2 }), ["carne", "papa"]);
+});

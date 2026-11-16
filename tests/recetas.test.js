@@ -114,3 +114,52 @@ test("con dos o tres ingredientes comunes hay algo para preparar ya", () => {
     assert.ok(listas.length >= 1, `${seccion} con ${texto}: nada completo`);
   }
 });
+
+// Ingredientes que se pidieron como opción, con recetas que los usen.
+const PEDIDOS = [
+  ["vainitas", "vainita"], ["ajo", "ajo"], ["perejil", "perejil"], ["cilantro", "cilantro"],
+  ["brócoli", "brocoli"], ["pimentón", "pimenton"], ["camote", "camote"], ["yuca", "yuca"],
+  ["plátano de freír", "platano"], ["cerdo", "cerdo"], ["salchicha", "salchicha"],
+];
+
+test("los ingredientes pedidos se reconocen y tienen comidas que los usan", () => {
+  for (const [texto, clave] of PEDIDOS) {
+    assert.deepEqual(leerIngredientes(texto, CONOCIDOS), [clave], texto);
+    assert.ok(CONOCIDOS.has(clave), `${clave} no es un ingrediente del catálogo`);
+
+    const comidas = RECETAS.filter((r) => r.seccion === "comida" && r.claves.includes(clave));
+    assert.ok(comidas.length >= 3, `${clave}: solo ${comidas.map((r) => r.id)}`);
+    const simples = comidas.filter((r) => r.etiquetas.includes("simple"));
+    assert.ok(simples.length >= 2, `${clave}: solo ${simples.length} comidas simples`);
+
+    // Con ese ingrediente y uno más ya sale algo cercano.
+    const cerca = enSeccion(texto, "comida").filter((x) => x.faltan.length <= 1);
+    assert.ok(cerca.length >= 2, `${clave}: solo ${cerca.map((x) => x.receta.id)}`);
+  }
+});
+
+test("el ajo es un ingrediente más, no algo que se da por hecho", () => {
+  assert.ok(!BASICOS.includes("ajo"));
+  const conAjo = (id) => RECETAS.find((r) => r.id === id).claves.includes("ajo");
+  assert.ok(conAjo("fideos-al-ajo"));
+  assert.ok(conAjo("pollo-dorado"));
+  // Solo donde es protagonista: al filete no le "falta" ajo.
+  assert.ok(!conAjo("filete-encebollado"));
+});
+
+test("otros nombres de los ingredientes nuevos", () => {
+  const clave = (texto) => normalizar(texto, CONOCIDOS);
+  assert.equal(clave("batata"), "camote");
+  assert.equal(clave("boniatos"), "camote");
+  assert.equal(clave("mandioca"), "yuca");
+  assert.equal(clave("plátano macho"), "platano");
+  assert.equal(clave("plátanos verdes"), "platano");
+  assert.equal(clave("plátano para freír"), "platano");
+  assert.equal(clave("chauchas"), "vainita");
+  assert.equal(clave("dientes de ajo"), "ajo");
+  assert.equal(clave("un atado de perejil"), "perejil");
+});
+
+test("hay un postre con camote", () => {
+  assert.ok(RECETAS.some((r) => r.seccion === "postre" && r.claves.includes("camote")));
+});

@@ -411,3 +411,26 @@ test("el texto para compartir dice para cuántas personas es", () => {
   assert.ok(texto.includes("8 papas"));
   assert.ok(!textoDeLista(listaDeCompras(platos), platos).includes("personas"));
 });
+
+// ───────────── Ajo, perejil y cilantro se compran ─────────────
+
+test("el ajo y las hierbas frescas van en la lista de compras, no en la despensa", () => {
+  // "2 dientes de ajo" y "Perejil, sal, pimienta y aceite".
+  const lista = listaDeCompras([porId("filete-encebollado")]);
+  assert.match(item(lista, "ajo").usos[0].lineas.join(), /2 dientes de ajo/);
+  assert.ok(item(lista, "perejil"));
+  assert.ok(!lista.despensa.includes("ajo") && !lista.despensa.includes("perejil"));
+  assert.ok(lista.despensa.includes("sal") && lista.despensa.includes("aceite"));
+  const verduras = lista.puestos.find((p) => p.nombre === "Verduras y frutas").items.map((i) => i.clave);
+  assert.ok(verduras.includes("ajo") && verduras.includes("perejil"));
+});
+
+test("las comidas nuevas entran al menú y sus acompañamientos no", () => {
+  for (const id of ["vainitas-con-huevo", "crema-de-brocoli", "chuletas-de-cerdo", "yuca-con-queso",
+    "arroz-con-salchicha", "camote-con-queso", "pollo-al-cilantro", "arroz-a-la-cubana"]) {
+    assert.ok(sirveParaMenu(porId(id)), `${id} debería poder ir en el menú`);
+  }
+  for (const id of ["yuca-frita", "camote-frito", "platano-frito", "chimichurri", "pan-con-ajo"]) {
+    assert.ok(!sirveParaMenu(porId(id)), `${id} es un acompañamiento`);
+  }
+});
