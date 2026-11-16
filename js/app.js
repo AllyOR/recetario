@@ -1,8 +1,8 @@
 // Las pantallas del recetario. Sin dependencias ni paso de compilación: el
 // navegador carga este módulo tal cual.
 //
-// Rutas (en el hash): #/  #/comidas  #/bebidas  #/postres  #/sugerencias
-// #/receta/<id>. Todo lo que escribe la persona se pinta con textContent
+// Rutas (en el hash): #/  #/menu  #/comidas  #/bebidas  #/postres
+// #/sugerencias  #/receta/<id>. Todo lo que escribe la persona se pinta con textContent
 // (función `h`), nunca como HTML.
 
 import { RECETAS, BASICOS } from "./recetas.js";
@@ -14,6 +14,7 @@ import {
   buscarPorIngredientes,
   ingredientesFrecuentes,
 } from "./buscador.js";
+import { DIAS, armarMenu, cambiarDia, menuValido, listaDeCompras, textoDeLista } from "./menu.js";
 
 const CONOCIDOS = clavesConocidas(RECETAS);
 
@@ -103,12 +104,18 @@ function leerTengo(guardado) {
 
 const guardadoMias = leerGuardado("recetario.mias", []);
 const guardadoBuscarEn = leerGuardado("recetario.buscarEn", "comida");
+const guardadoMenu = leerGuardado("recetario.menu", null);
+const guardadoCompras = leerGuardado("recetario.compras", []);
 
 const estado = {
   tengo: leerTengo(leerGuardado("recetario.tengo", null)),
   // La sección en la que busca la pantalla "Qué tengo".
   buscarEn: Object.hasOwn(SECCIONES, guardadoBuscarEn) ? guardadoBuscarEn : "comida",
   mias: Array.isArray(guardadoMias) ? guardadoMias.filter(esRecetaPropia) : [],
+  // El menú de la semana (siete ids de receta) y lo ya marcado en su lista
+  // de compras. Si el menú guardado dejó de servir, se arma otro al entrar.
+  menu: menuValido(RECETAS, guardadoMenu) ? guardadoMenu : null,
+  compras: esLista(guardadoCompras) ? guardadoCompras : [],
   filtro: { comida: "todas", bebida: "todas", postre: "todas" },
   texto: { comida: "", bebida: "", postre: "" },
 };
@@ -420,10 +427,8 @@ function textoParaCompartir(r) {
   ].join("\n");
 }
 
-async function compartir(r) {
-  const datos = r.propia
-    ? { title: r.nombre, text: textoParaCompartir(r) }
-    : { title: r.nombre, text: `${r.nombre}: receta del Recetario`, url: location.href };
+/** Abre el menú de compartir del teléfono; si no hay, WhatsApp. */
+async function compartirDatos(datos) {
   if (navigator.share) {
     try {
       await navigator.share(datos);
@@ -434,6 +439,14 @@ async function compartir(r) {
   }
   const mensaje = datos.url ? `${datos.text} ${datos.url}` : datos.text;
   window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener");
+}
+
+function compartir(r) {
+  return compartirDatos(
+    r.propia
+      ? { title: r.nombre, text: textoParaCompartir(r) }
+      : { title: r.nombre, text: `${r.nombre}: receta del Recetario`, url: location.href },
+  );
 }
 
 function vistaReceta(id) {
@@ -499,6 +512,169 @@ function vistaNoEncontrada() {
     h("h1", {}, "No encontré esa página"),
     h("p", { class: "intro" }, "Puede que la receta ya no exista o que el enlace esté incompleto."),
     h("a", { class: "boton", href: "#/" }, "Ir al inicio"),
+  );
+}
+
+// ───────────── Pantalla: Menú de la semana y lista de compras ─────────────
+
+function vistaMenu() {
+  if (!estado.menu) {
+    estado.menu = armarMenu(RECETAS);
+    guardar("recetario.menu", estado.menu);
+  }
+
+  const zonaDias = h("ol", { class: "semana" });
+  const zonaLista = h("div", {});
+  const cuenta = h("p", { class: "cuenta", role: "status" });
+  const novedad = h("p", { class: "ayuda", role: "status" });
+  const botonDesmarcar = h("button", { type: "button", class: "enlace", onclick: desmarcarTodo }, "Desmarcar todo");
+
+  const platos = () => estado.menu.map((id) => RECETAS.find((r) => r.id === id));
+  const corto = (dia) => DIAS[dia].slice(0, 3).toLowerCase();
+
+  function guardarMenu(menu, lista) {
+    estado.menu = menu;
+    guardar("recetario.menu", menu);
+    // Lo marcado solo vale mientras el ingrediente siga en la lista.
+    const siguen = lista.puestos.flatMap((p) => p.items.map((i) => i.clave));
+    estado.compras = estado.compras.filter((c) => siguen.includes(c));
+    guardar("recetario.compras", estado.compras);
+  }
+
+  function pintarCuenta(lista) {
+    const todos = lista.puestos.flatMap((p) => p.items);
+    const faltan = todos.filter((i) => !estado.compras.includes(i.clave)).length;
+    cuenta.textContent = faltan === 0
+      ? `Ya tienes las ${todos.length} cosas de la lista.`
+      : `Te falta conseguir ${faltan} de ${todos.length} cosas.`;
+    botonDesmarcar.hidden = estado.compras.length === 0;
+  }
+
+  function desmarcarTodo() {
+    estado.compras = [];
+    guardar("recetario.compras", estado.compras);
+    pintarLista();
+  }
+
+  function pintarDias() {
+    zonaDias.replaceChildren(...platos().map((r, dia) =>
+      h("li", { class: "dia" },
+        h("span", { class: "dia-nombre" }, DIAS[dia]),
+        h("a", { class: "dia-plato", href: `#/receta/${encodeURIComponent(r.id)}` },
+          h("span", { class: "dia-emoji", "aria-hidden": "true" }, r.emoji),
+          h("span", {},
+            h("span", { class: "tarjeta-nombre" }, r.nombre),
+            h("span", { class: "tarjeta-meta" },
+              `${r.minutos} min · para ${r.porciones}${r.etiquetas.includes("nutritiva") ? " · nutritiva" : ""}`),
+          ),
+        ),
+        h("button", {
+          type: "button", class: "boton boton-suave boton-chico",
+          "aria-label": `Cambiar el plato del ${DIAS[dia].toLowerCase()}`,
+          onclick: () => {
+            const menu = cambiarDia(RECETAS, estado.menu, dia);
+            const nuevos = menu.map((id) => RECETAS.find((x) => x.id === id));
+            guardarMenu(menu, listaDeCompras(nuevos));
+            pintar();
+            novedad.textContent = `${DIAS[dia]}: ahora toca ${nuevos[dia].nombre}.`;
+            zonaDias.children[dia]?.querySelector("button")?.focus();
+          },
+        }, "Cambiar"),
+      )));
+  }
+
+  function pintarLista() {
+    const lista = listaDeCompras(platos());
+    const enCasa = estado.tengo.comida;
+
+    const renglon = (item) => {
+      const casilla = h("input", { type: "checkbox", checked: estado.compras.includes(item.clave) });
+      casilla.addEventListener("change", () => {
+        estado.compras = casilla.checked
+          ? [...estado.compras, item.clave]
+          : estado.compras.filter((c) => c !== item.clave);
+        guardar("recetario.compras", estado.compras);
+        pintarCuenta(lista);
+      });
+      const detalle = item.usos
+        .map((u) => `${u.lineas.join(" + ") || u.receta.nombre} (${corto(u.dia)})`)
+        .join(" · ");
+      return h("li", {}, h("label", {}, casilla,
+        h("span", {},
+          h("strong", {}, mayuscula(item.nombre)),
+          item.total ? ` · ${item.total} en total` : null,
+          h("span", { class: "compra-detalle" }, detalle),
+          item.nota ? h("span", { class: "compra-detalle" }, `En Bolivia: ${item.nota}.`) : null,
+          enCasa.includes(item.clave)
+            ? h("span", { class: "compra-detalle compra-en-casa" }, "La anotaste en «Qué tengo»: mira si alcanza.")
+            : null,
+        )));
+    };
+
+    zonaLista.replaceChildren(
+      ...lista.puestos.flatMap((puesto) => [
+        h("h3", { class: "subtitulo" }, puesto.nombre),
+        h("ul", { class: "marcables" }, puesto.items.map(renglon)),
+      ]),
+      lista.despensa.length
+        ? h("p", { class: "aviso" }, `Revisa que no falte en casa: ${lista.despensa.join(", ")}.`)
+        : null,
+    );
+    pintarCuenta(lista);
+  }
+
+  function pintar() {
+    pintarDias();
+    pintarLista();
+  }
+
+  const tituloLista = h("h2", { class: "resultados", tabindex: "-1" }, "Lista de compras");
+  pintar();
+
+  return h("div", { class: "vista menu-semana" },
+    h("h1", {}, "Menú de la semana"),
+    h("p", { class: "intro" },
+      "Siete almuerzos sencillos, con ingredientes que se consiguen en cualquier mercado de Bolivia. " +
+      "Cambia el plato que no te convenza; abajo está la lista de compras."),
+    zonaDias,
+    novedad,
+    h("div", { class: "acciones" },
+      h("button", {
+        type: "button", class: "boton",
+        onclick: () => {
+          tituloLista.scrollIntoView({ behavior: "smooth", block: "start" });
+          tituloLista.focus({ preventScroll: true });
+        },
+      }, "Ver lista de compras ↓"),
+      h("button", {
+        type: "button", class: "boton boton-suave",
+        onclick: () => {
+          if (!confirm("¿Armar otra semana? Se cambian los siete platos y se desmarca la lista.")) return;
+          const menu = armarMenu(RECETAS);
+          estado.compras = [];
+          guardarMenu(menu, listaDeCompras(menu.map((id) => RECETAS.find((r) => r.id === id))));
+          pintar();
+          novedad.textContent = "Listo: hay un menú nuevo para toda la semana.";
+        },
+      }, "Armar otra semana"),
+    ),
+
+    tituloLista,
+    h("p", { class: "ayuda" },
+      "Junta lo que piden los siete platos, con las cantidades de cada receta (cada plato dice para cuántos rinde). " +
+      "Marca lo que ya tienes o ya compraste."),
+    cuenta,
+    zonaLista,
+    h("div", { class: "acciones" },
+      h("button", {
+        type: "button", class: "boton",
+        onclick: () => compartirDatos({
+          title: "Lista de compras",
+          text: textoDeLista(listaDeCompras(platos()), platos(), { yaTengo: estado.compras }),
+        }),
+      }, "Compartir lista"),
+      botonDesmarcar,
+    ),
   );
 }
 
@@ -724,6 +900,9 @@ function pintarRuta() {
   } else if (seccion) {
     vista = vistaSeccion(seccion);
     titulo = SECCIONES[seccion].titulo;
+  } else if (parte === "menu") {
+    vista = vistaMenu();
+    titulo = "Menú de la semana";
   } else if (parte === "sugerencias") {
     vista = vistaSugerencias();
     titulo = "Ideas y recetas nuevas";

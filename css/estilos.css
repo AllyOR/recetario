@@ -97,7 +97,7 @@ main:focus { outline: none; }
 
 .menu {
   position: fixed; inset: auto 0 0 0; z-index: 20;
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(6, 1fr);
   background: var(--superficie);
   border-top: 1px solid var(--borde);
   padding-bottom: env(safe-area-inset-bottom);
@@ -107,7 +107,7 @@ main:focus { outline: none; }
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: .1rem; min-height: var(--alto-menu); padding: .3rem .1rem;
   color: var(--suave); text-decoration: none;
-  font-size: .8rem; font-weight: 600; text-align: center;
+  font-size: .75rem; font-weight: 600; text-align: center;
 }
 
 .menu-icono { font-size: 1.45rem; line-height: 1; }
@@ -178,6 +178,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 }
 .boton-suave { background: transparent; color: var(--primario); }
 .boton-ver { margin-top: 1rem; width: 100%; max-width: 420px; }
+.boton-chico { min-height: 44px; padding: .3rem .9rem; font-size: 1rem; }
 .resultados { scroll-margin-top: 80px; }
 
 .mas-recetas { margin-top: 1.75rem; }
@@ -253,6 +254,31 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .distintivo-nutritiva, .distintivo-sin-alcohol { background: var(--verde-fondo); color: var(--verde); }
 .distintivo-alcohol { background: var(--aviso-fondo); }
 
+/* ── Menú de la semana y lista de compras ── */
+
+.menu-semana { max-width: 760px; }
+.semana { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.dia {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .2rem .7rem;
+  padding: .7rem .9rem;
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+.dia-nombre {
+  grid-column: 1 / -1;
+  font-size: .9rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--suave);
+}
+.dia-plato {
+  display: flex; align-items: center; gap: .7rem; min-width: 0; min-height: 44px;
+  color: var(--texto); text-decoration: none;
+}
+.dia-plato .tarjeta-nombre, .dia-plato .tarjeta-meta { display: block; }
+.dia-plato .tarjeta-nombre { text-decoration: underline; text-decoration-color: var(--borde); text-underline-offset: 3px; }
+.dia-emoji { font-size: 2rem; line-height: 1; }
+.compra-detalle { display: block; color: var(--suave); font-size: .95rem; }
+.compra-en-casa { color: var(--verde); font-weight: 600; }
+
 /* ── Receta ── */
 
 .receta { max-width: 760px; }
@@ -287,9 +313,17 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 
 .pie { text-align: center; color: var(--suave); font-size: .9rem; padding: 0 1rem 1.5rem; }
 
-/* ── Pantallas anchas: el menú sube a la cabecera ── */
+/* ── Pantallas anchas ── */
 
 @media (min-width: 800px) {
+  main { padding-top: 2rem; }
+  h1 { font-size: 2.3rem; }
+  .buscador { max-width: 640px; }
+  .menu a { font-size: .9rem; }
+}
+
+/* El menú sube a la cabecera cuando caben las seis secciones en una fila. */
+@media (min-width: 1040px) {
   body { padding-bottom: 0; }
 
   .cabecera {
@@ -313,10 +347,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 
   .menu-icono { font-size: 1.2rem; }
   .menu a[aria-current="page"] { box-shadow: inset 0 -3px 0 var(--primario); }
-
-  main { padding-top: 2rem; }
-  h1 { font-size: 2.3rem; }
-  .buscador { max-width: 640px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

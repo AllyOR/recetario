@@ -10,6 +10,11 @@ en la cocina. Sitio: <https://allyor.github.io/recetario/>
   cebolla) y muestra qué se puede preparar de esa sección (silpancho, pique
   macho, filete encebollado), ordenado por lo que menos falta. Cada sección
   guarda su propia lista de ingredientes.
+- **Menú de la semana:** arma siete almuerzos simples (hasta una hora, con
+  ingredientes de cualquier mercado de Bolivia), sin repetir carne, pollo,
+  arroz o fideo dos días seguidos. Cada día se puede cambiar. Debajo sale la
+  lista de compras por puesto del mercado, con las cantidades de cada receta,
+  casillas para marcar lo que ya hay y un botón para compartirla.
 - **Modo día y modo noche:** el botón de la cabecera cambia entre los dos y
   recuerda la elección; hasta entonces sigue al sistema.
 - **Comidas:** bolivianas e internacionales, con filtros de simples y nutritivas.
@@ -32,8 +37,9 @@ lo que se sube ahí queda publicado en un par de minutos.
 | `index.html`, `css/estilos.css` | La página y su aspecto |
 | `js/app.js` | Las pantallas y la navegación |
 | `js/buscador.js` | La búsqueda por ingredientes |
+| `js/menu.js` | El menú de la semana y la lista de compras |
 | `js/recetas-comidas.js`, `js/recetas-bebidas.js`, `js/recetas-postres.js` | El catálogo |
-| `tests/` | Pruebas del buscador y del catálogo |
+| `tests/` | Pruebas del buscador, del menú y del catálogo |
 
 ## Probar en tu computadora
 
@@ -53,3 +59,8 @@ Copia una receta del archivo de su sección y cambia los datos. En `claves` van
 los ingredientes principales en minúsculas, singular y sin tildes (`papa`,
 `limon`), sin lo básico (sal, aceite, agua, azúcar, ajo). Corre `node --test`:
 las pruebas avisan si falta algo o una clave está mal escrita.
+
+Para que una comida pueda salir en el menú de la semana tiene que llevar la
+etiqueta `simple`, tardar una hora o menos, rendir para dos o más, y cada
+clave tiene que estar en la lista de puestos de `js/menu.js` (`PUESTOS`). Si
+es una salsa o un acompañamiento, anótala en `NO_ES_ALMUERZO`.
