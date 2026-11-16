@@ -12,6 +12,7 @@ import {
   menuValido,
   listaDeCompras,
   textoDeLista,
+  escalarLinea,
 } from "../js/menu.js";
 
 const porId = (id) => {
@@ -290,4 +291,120 @@ test("el texto para compartir trae la lista y el menú de la semana", () => {
   platos.forEach((r, dia) => assert.ok(texto.includes(`${DIAS[dia]}: ${r.nombre}`), r.nombre));
   assert.ok(texto.includes("aceite"));
   assert.ok(!texto.includes("undefined") && !texto.includes("null"));
+});
+
+// ───────────── Cantidades según cuántas personas comen ─────────────
+
+test("escalarLinea multiplica las cantidades y deja el resto como está", () => {
+  const casos = [
+    ["4 papas medianas", 1.5, "6 papas medianas"],
+    ["300 g de carne molida", 1.5, "450 g de carne molida"],
+    ["200 g de queso rallado", 0.75, "150 g de queso rallado"],
+    ["1½ tazas de arroz", 2, "3 tazas de arroz"],
+    ["1 kg de papa", 1.5, "1½ kg de papa"],
+    ["¼ de cebolla picada muy fina", 2, "½ de cebolla picada muy fina"],
+    ["3 a 4 cucharadas de leche", 2, "6 a 8 cucharadas de leche"],
+    ["2 tazas de almidón de yuca (250 g)", 2, "4 tazas de almidón de yuca (500 g)"],
+    ["10 limones", 0.5, "5 limones"],
+  ];
+  for (const [linea, factor, esperado] of casos) {
+    assert.equal(escalarLinea(linea, factor), esperado, `${linea} × ${factor}`);
+  }
+});
+
+test("escalarLinea no toca las líneas sin cantidad ni cuando el factor es 1", () => {
+  for (const linea of ["Sal y aceite", "Perejil, ajo y sal", "Aceite para freír", "Hojas de lechuga"]) {
+    assert.equal(escalarLinea(linea, 3), linea);
+  }
+  for (const linea of ["4 papas medianas", "1½ tazas de arroz", "El jugo de 1 limón"]) {
+    assert.equal(escalarLinea(linea, 1), linea);
+  }
+});
+
+test("escalarLinea pone en plural o en singular lo que sigue al número", () => {
+  const casos = [
+    ["1 cebolla picada", 2, "2 cebollas picadas"],
+    ["1 lechuga grande", 2, "2 lechugas grandes"],
+    ["1 papa grande en cubos", 1.5, "1½ papas grandes en cubos"],
+    ["1 pimentón en tiras", 2, "2 pimentones en tiras"],
+    ["El jugo de 1 limón", 2, "El jugo de 2 limones"],
+    ["1 taza de arroz", 2, "2 tazas de arroz"],
+    ["½ taza de leche", 4, "2 tazas de leche"],
+    ["1 cucharada de aceite, 1 diente de ajo y sal", 2, "2 cucharadas de aceite, 2 dientes de ajo y sal"],
+    ["Lechuga y 1 tomate para la ensalada", 2, "Lechuga y 2 tomates para la ensalada"],
+    ["2 huevos duros", 0.5, "1 huevo duro"],
+    ["2 limones", 0.5, "1 limón"],
+    ["2 tomates maduros", 0.5, "1 tomate maduro"],
+    ["2 bistecs delgados", 0.5, "1 bistec delgado"],
+    ["2 panes o 4 rebanadas de pan", 0.5, "1 pan o 2 rebanadas de pan"],
+    ["2 tazas de arroz", 0.5, "1 taza de arroz"],
+    ["1 taza de arroz", 0.5, "½ taza de arroz"],
+    // Sin cambio de número no cambia nada más.
+    ["Jugo de ½ limón", 2, "Jugo de 1 limón"],
+    ["2 cebollas grandes", 1.5, "3 cebollas grandes"],
+    // Los gramos y los kilos no llevan plural.
+    ["1 kg de zapallo pelado en trozos", 2, "2 kg de zapallo pelado en trozos"],
+  ];
+  for (const [linea, factor, esperado] of casos) {
+    assert.equal(escalarLinea(linea, factor), esperado, `${linea} × ${factor}`);
+  }
+});
+
+test("escalarLinea redondea a cantidades que se pueden comprar y medir", () => {
+  const casos = [
+    // Lo que se cuenta: de a medios hasta 3, enteros desde ahí.
+    ["3 huevos", 1.5, "5 huevos"],
+    ["1 cebolla", 1.25, "1½ cebollas"],
+    ["2 papas", 0.75, "1½ papas"],
+    ["1 huevo", 0.25, "¼ huevo"],
+    ["4 presas de pollo", 0.25, "1 presa de pollo"],
+    // Tazas y cucharadas: de a cuartos hasta 2, de a medios desde ahí.
+    ["1 taza de quinua", 1.25, "1¼ tazas de quinua"],
+    ["1½ tazas de arroz", 1.5, "2½ tazas de arroz"],
+    // Gramos: de a 10 desde 100, de a 5 por debajo.
+    ["300 g de fideo", 0.75, "230 g de fideo"],
+    ["50 g de queso", 0.75, "40 g de queso"],
+    // Nunca baja a cero.
+    ["¼ de cebolla", 0.25, "¼ de cebolla"],
+  ];
+  for (const [linea, factor, esperado] of casos) {
+    assert.equal(escalarLinea(linea, factor), esperado, `${linea} × ${factor}`);
+  }
+});
+
+test("la lista ajusta las cantidades de cada plato a las personas que comen", () => {
+  const para4 = plato("para-cuatro", ["papa", "carne"], ["4 papas medianas", "300 g de carne molida", "Sal"]);
+  const para2 = { ...plato("para-dos", ["papa", "huevo"], ["2 papas en cubos", "2 huevos"]), porciones: 2 };
+
+  const lista = listaDeCompras([para4, para2], { personas: 6 });
+  assert.equal(lista.personas, 6);
+  // El de cuatro se multiplica por 1,5 y el de dos por 3.
+  assert.deepEqual(item(lista, "papa").usos.map((u) => u.lineas), [["6 papas medianas"], ["6 papas en cubos"]]);
+  assert.equal(item(lista, "papa").total, "12");
+  assert.deepEqual(item(lista, "carne").usos[0].lineas, ["450 g de carne molida"]);
+  assert.deepEqual(item(lista, "huevo").usos[0].lineas, ["6 huevos"]);
+
+  // Sin número de personas, o con el de la receta, queda lo que dice la receta.
+  const tal = listaDeCompras([para4, para2]);
+  assert.equal(tal.personas, null);
+  assert.deepEqual(item(tal, "papa").usos.map((u) => u.lineas), [["4 papas medianas"], ["2 papas en cubos"]]);
+  assert.equal(item(tal, "papa").total, "6");
+  assert.deepEqual(item(listaDeCompras([para4], { personas: 4 }), "papa").usos[0].lineas, ["4 papas medianas"]);
+});
+
+test("el total suma las cantidades exactas, no las ya redondeadas", () => {
+  // 3 huevos × 1,5 son 4,5 en cada plato: 9 en total, no 5 + 5.
+  const lista = listaDeCompras([
+    plato("uno", ["huevo"], ["3 huevos", "Sal"]),
+    plato("dos", ["huevo"], ["3 huevos", "Sal"]),
+  ], { personas: 6 });
+  assert.equal(item(lista, "huevo").total, "9");
+});
+
+test("el texto para compartir dice para cuántas personas es", () => {
+  const platos = [plato("uno", ["papa"], ["4 papas", "Sal"])];
+  const texto = textoDeLista(listaDeCompras(platos, { personas: 8 }), platos);
+  assert.match(texto, /^Lista de compras de la semana \(para 8 personas\)/);
+  assert.ok(texto.includes("8 papas"));
+  assert.ok(!textoDeLista(listaDeCompras(platos), platos).includes("personas"));
 });
