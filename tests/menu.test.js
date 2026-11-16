@@ -6,6 +6,7 @@ import {
   DIAS,
   sirveParaMenu,
   grupoDe,
+  baseDe,
   armarMenu,
   cambiarDia,
   menuValido,
@@ -90,6 +91,16 @@ test("armarMenu da siete platos distintos, variados y con días nutritivos", () 
       assert.ok(veces <= 2, `${g} sale ${veces} veces, ${donde}`);
     }
 
+    // Tampoco la misma base (arroz, fideo, quinua, pan) seguida.
+    const bases = platos.map(baseDe);
+    for (let i = 1; i < bases.length; i++) {
+      assert.notEqual(bases[i], bases[i - 1], `dos días seguidos de ${bases[i]}, ${donde}`);
+    }
+    for (const b of new Set(bases)) {
+      const veces = bases.filter((x) => x === b).length;
+      assert.ok(veces <= 2, `${b} es la base ${veces} veces, ${donde}`);
+    }
+
     const nutritivos = platos.filter((r) => r.etiquetas.includes("nutritiva")).length;
     assert.ok(nutritivos >= 3, `solo ${nutritivos} días nutritivos, ${donde}`);
   }
@@ -115,6 +126,17 @@ test("grupoDe dice de qué es el plato", () => {
   assert.equal(grupoDe(porId("sopa-de-fideo")), "verdura");
 });
 
+test("baseDe dice con qué se llena el plato", () => {
+  assert.equal(baseDe(porId("lentejas-con-arroz")), "arroz");
+  assert.equal(baseDe(porId("arroz-chaufa")), "arroz");
+  assert.equal(baseDe(porId("aji-de-fideo")), "fideo");
+  assert.equal(baseDe(porId("sopa-de-quinua")), "quinua");
+  assert.equal(baseDe(porId("hamburguesa-casera")), "pan");
+  // Sin arroz, fideo, quinua ni pan, cuenta el primer ingrediente principal.
+  assert.equal(baseDe(porId("papa-wayku")), "papa");
+  assert.equal(baseDe(porId("filete-encebollado")), "carne");
+});
+
 test("cambiarDia cambia solo ese día, por un plato que no estaba", () => {
   for (let semilla = 1; semilla <= 60; semilla++) {
     const azar = azarCon(semilla);
@@ -132,6 +154,9 @@ test("cambiarDia cambia solo ese día, por un plato que no estaba", () => {
     const grupos = nuevo.map((id) => grupoDe(porId(id)));
     if (dia > 0) assert.notEqual(grupos[dia], grupos[dia - 1], `semilla ${semilla}`);
     if (dia < 6) assert.notEqual(grupos[dia], grupos[dia + 1], `semilla ${semilla}`);
+    const bases = nuevo.map((id) => baseDe(porId(id)));
+    if (dia > 0) assert.notEqual(bases[dia], bases[dia - 1], `semilla ${semilla}`);
+    if (dia < 6) assert.notEqual(bases[dia], bases[dia + 1], `semilla ${semilla}`);
     assert.deepEqual(menu, armarMenu(RECETAS, { azar: azarCon(semilla) }), "no toca el menú original");
   }
 });
@@ -203,6 +228,10 @@ test("los condimentos no se confunden con verduras ni con lácteos", () => {
   // "2 cucharadas de aceite o mantequilla": con el aceite alcanza.
   const fideos = listaDeCompras([porId("fideos-con-queso")]);
   assert.equal(item(fideos, "mantequilla"), undefined);
+  // "1 taza de crema de leche" es crema, no leche.
+  const alfredo = listaDeCompras([porId("fideos-alfredo")]);
+  assert.ok(item(alfredo, "crema"));
+  assert.equal(item(alfredo, "leche"), undefined);
   // "Ajo y sal, y unas gotas de limón si hay": lo de "si hay" no se compra.
   assert.equal(item(listaDeCompras([porId("arroz-con-atun")]), "limon"), undefined);
 });

@@ -99,7 +99,7 @@ const CON_TILDE = {
 };
 
 /** Minúsculas, sin tildes (conserva la ñ), sin signos, espacios simples. */
-function limpiar(texto) {
+export function limpiar(texto) {
   return String(texto ?? "")
     .toLowerCase()
     .replace(/ñ/g, "\u0001")
