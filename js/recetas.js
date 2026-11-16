@@ -8,4 +8,5 @@ import { POSTRES } from "./recetas-postres.js";
 export const RECETAS = [...COMIDAS, ...BEBIDAS, ...POSTRES];
 
 // Lo que se da por hecho que hay en cualquier cocina; nunca cuenta como "falta".
-export const BASICOS = ["sal", "aceite", "agua", "azucar", "pimienta", "ajo", "hielo"];
+// El ajo no está: es un ingrediente más, y cuenta donde es protagonista.
+export const BASICOS = ["sal", "aceite", "agua", "azucar", "pimienta", "hielo"];

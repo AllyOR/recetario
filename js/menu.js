@@ -14,8 +14,9 @@ export const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sáb
 const PUESTOS = [
   ["Verduras y frutas", [
     "papa", "cebolla", "tomate", "zanahoria", "arveja", "haba", "choclo", "zapallo",
-    "lechuga", "pepino", "espinaca", "apio", "brocoli", "pimenton", "cebolla verde",
-    "locoto", "papalisa", "yuca", "palta", "limon", "platano",
+    "lechuga", "pepino", "espinaca", "apio", "brocoli", "pimenton", "vainita", "cebolla verde",
+    "locoto", "papalisa", "yuca", "camote", "palta", "limon", "platano",
+    "ajo", "perejil", "cilantro",
   ]],
   ["Carnes, pollo y pescado", [
     "carne", "pollo", "cerdo", "pescado", "salchicha", "charque", "corazon",
@@ -40,6 +41,9 @@ const NO_ES_ALMUERZO = new Set([
   "llajua", "guacamole", "sarza", "pan-con-palta", "arroz-graneado", "papas-doradas",
   "papas-con-cebolla", "ensalada-de-pepino", "ensalada-de-zanahoria", "zanahorias-glaseadas",
   "pure-de-papa", "cunape", "zonzo", "huevos-revueltos", "pan-con-queso", "sandwich-de-huevo",
+  "vainitas-salteadas", "ensalada-de-vainitas", "papas-al-ajo", "pan-con-ajo", "chimichurri",
+  "arroz-al-perejil", "salsa-de-cilantro", "camote-frito", "pure-de-camote", "yuca-frita",
+  "platano-frito",
 ]);
 
 const MINUTOS_MAXIMOS = 60;
@@ -163,13 +167,14 @@ export function menuValido(recetas, ids) {
 // ───────────── Lista de compras ─────────────
 
 // Lo que casi siempre hay en casa: va aparte, como recordatorio. Frase ya
-// limpia (sin tildes) → nombre para mostrar.
+// limpia (sin tildes) → nombre para mostrar. El ajo, el perejil y el cilantro
+// no están: se compran frescos y van en la lista, en verduras.
 const DESPENSA = [
-  ["aceite", "aceite"], ["sal", "sal"], ["ajo", "ajo"], ["pimienta", "pimienta"],
-  ["azucar", "azúcar"], ["comino", "comino"], ["oregano", "orégano"], ["perejil", "perejil"],
+  ["aceite", "aceite"], ["sal", "sal"], ["pimienta", "pimienta"],
+  ["azucar", "azúcar"], ["comino", "comino"], ["oregano", "orégano"],
   ["laurel", "laurel"], ["vinagre", "vinagre"], ["mostaza", "mostaza"],
   ["pimenton dulce", "pimentón dulce"], ["aji", "ají molido"], ["urucu", "urucú"],
-  ["cilantro", "cilantro"], ["quirquiña", "quirquiña"], ["huacataya", "huacataya"],
+  ["quirquiña", "quirquiña"], ["huacataya", "huacataya"],
   ["nuez moscada", "nuez moscada"], ["anis", "anís"], ["romero", "romero"],
   ["jengibre", "jengibre"], ["ketchup", "kétchup"],
 ];

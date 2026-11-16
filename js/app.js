@@ -197,12 +197,27 @@ const rejilla = (tarjetas) => h("ul", { class: "rejilla" }, tarjetas);
 
 // ───────────── Pantalla: ¿Qué tengo? ─────────────
 
-// Los ingredientes para tocar, los más usados de cada sección.
+// Ingredientes que se ofrecen siempre para tocar, aunque no sean de los más usados.
+const SIEMPRE_A_MANO = {
+  comida: [
+    "vainita", "ajo", "perejil", "cilantro", "brocoli", "pimenton", "camote", "yuca",
+    "platano", "cerdo", "salchicha",
+  ],
+};
+
+// Los ingredientes para tocar: los más usados de cada sección y los de arriba.
 const FRECUENTES = Object.fromEntries(
   Object.keys(SECCIONES).map((s) => [
-    s, ingredientesFrecuentes(RECETAS.filter((r) => r.seccion === s), { cuantos: 18 }),
+    s,
+    ingredientesFrecuentes(RECETAS.filter((r) => r.seccion === s), {
+      cuantos: 18, siempre: SIEMPRE_A_MANO[s] ?? [],
+    }),
   ]),
 );
+
+/** El nombre de un ingrediente en una sección: en comidas, el plátano es el de freír. */
+const nombreEn = (clave, seccion) =>
+  seccion === "comida" && clave === "platano" ? "plátano de freír" : nombreBonito(clave);
 
 function vistaInicio() {
   const etiqueta = h("label", { for: "ingrediente" });
@@ -259,8 +274,8 @@ function vistaInicio() {
           mios().map((c) =>
             h("button", {
               type: "button", class: "ficha ficha-puesta",
-              "aria-label": `Quitar ${nombreBonito(c)}`, onclick: () => quitar(c),
-            }, mayuscula(nombreBonito(c)), h("span", { "aria-hidden": "true", class: "ficha-x" }, "×"))),
+              "aria-label": `Quitar ${nombreEn(c, estado.buscarEn)}`, onclick: () => quitar(c),
+            }, mayuscula(nombreEn(c, estado.buscarEn)), h("span", { "aria-hidden": "true", class: "ficha-x" }, "×"))),
           h("button", { type: "button", class: "enlace", onclick: () => cambiar([]) }, "Borrar todo"),
         ),
       ]),
@@ -279,7 +294,7 @@ function vistaInicio() {
     zonaFrecuentes.replaceChildren(
       ...FRECUENTES[estado.buscarEn].filter((c) => !mios().includes(c)).map((c) =>
         h("button", { type: "button", class: "ficha", onclick: () => agregar(c) },
-          h("span", { "aria-hidden": "true" }, "+ "), mayuscula(nombreBonito(c)))),
+          h("span", { "aria-hidden": "true" }, "+ "), mayuscula(nombreEn(c, estado.buscarEn)))),
     );
 
     zonaResultados.replaceChildren(...nodos);
@@ -368,7 +383,7 @@ function vistaInicio() {
       etiqueta,
       h("div", { class: "fila" }, entrada, h("button", { type: "submit", class: "boton" }, "Agregar")),
       h("p", { id: "ayuda-ingrediente", class: "ayuda" },
-        "Puedes escribir varios, separados por comas. Sal, aceite, agua, azúcar y ajo se dan por hechos."),
+        "Puedes escribir varios, separados por comas. Sal, aceite, agua y azúcar se dan por hechos."),
     ),
     zonaTengo,
     h("h2", { class: "subtitulo" }, "O toca para agregar"),

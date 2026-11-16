@@ -65,6 +65,13 @@ const SINONIMOS = {
   anana: "piña",
   vainita: "vainita",
   ejote: "vainita",
+  chaucha: "vainita",
+  batata: "camote",
+  boniato: "camote",
+  mandioca: "yuca",
+  "platano macho": "platano",
+  "platano verde": "platano",
+  "platano de freir": "platano",
   "vino tinto": "vino",
   "harina de trigo": "harina",
   hielos: "hielo",
@@ -193,18 +200,20 @@ export function nombreBonito(clave) {
 /**
  * Las claves más usadas en `recetas`, de más a menos (a igualdad, por nombre).
  * Sirve para proponer ingredientes de una sección. `excluir`: claves a saltar.
+ * `siempre`: claves que van al final aunque no estén entre las más usadas.
  */
-export function ingredientesFrecuentes(recetas, { cuantos = 18, excluir = [] } = {}) {
+export function ingredientesFrecuentes(recetas, { cuantos = 18, excluir = [], siempre = [] } = {}) {
   const veces = new Map();
   for (const r of recetas) {
     for (const c of r.claves ?? []) {
       if (!excluir.includes(c)) veces.set(c, (veces.get(c) ?? 0) + 1);
     }
   }
-  return [...veces]
+  const frecuentes = [...veces]
     .sort(([a, na], [b, nb]) => nb - na || a.localeCompare(b, "es"))
     .slice(0, cuantos)
     .map(([clave]) => clave);
+  return [...frecuentes, ...siempre.filter((c) => !frecuentes.includes(c) && !excluir.includes(c))];
 }
 
 /**

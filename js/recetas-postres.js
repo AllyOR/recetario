@@ -649,4 +649,24 @@ export const POSTRES = [
       "Sirve enseguida.",
     ],
   },
+
+  // ── Con camote ──
+  {
+    id: "dulce-de-camote", nombre: "Dulce de camote", seccion: "postre", origen: "internacional",
+    etiquetas: ["simple"], minutos: 40, porciones: 6, emoji: "🍠",
+    descripcion: "Camote en almíbar con canela, para comer frío o tibio.",
+    claves: ["camote", "canela"],
+    ingredientes: [
+      "3 camotes medianos",
+      "1 taza de azúcar",
+      "2 tazas de agua",
+      "1 rama de canela",
+      "3 clavos de olor (opcional)",
+    ],
+    pasos: [
+      "Pela los camotes y córtalos en trozos.",
+      "Hierve el agua con el azúcar, la canela y los clavos, 5 minutos.",
+      "Agrega el camote y cocina a fuego bajo 30 minutos, hasta que esté blando y el almíbar espese.",
+    ],
+  },
 ];
