@@ -257,6 +257,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* ── Menú de la semana y lista de compras ── */
 
 .menu-semana { max-width: 760px; }
+.campo-personas { margin: 0 0 1.25rem; max-width: 340px; }
 .semana { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
 .dia {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .2rem .7rem;

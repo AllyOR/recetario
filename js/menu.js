@@ -300,13 +300,103 @@ function totalBonito(n, medida) {
   return `${numeroBonito(n)} ${medida}${n > 1 ? "s" : ""}`;
 }
 
-/** El total de un ingrediente, si todas sus cantidades están en la misma medida. */
+/**
+ * El total de un ingrediente, si todas sus cantidades están en la misma medida.
+ * Suma las cantidades exactas de cada receta por su factor y redondea al final.
+ */
 function totalDe(clave, usos) {
-  const lineas = usos.flatMap((u) => u.lineas);
-  if (lineas.length < 2 || usos.some((u) => u.lineas.length === 0)) return null;
-  const cantidades = lineas.map((l) => cantidadDe(l, clave));
+  if (usos.some((u) => u.originales.length === 0)) return null;
+  const cantidades = usos.flatMap((u) =>
+    u.originales.map((l) => {
+      const c = cantidadDe(l, clave);
+      return c && { n: c.n * u.factor, medida: c.medida };
+    }));
+  if (cantidades.length < 2) return null;
   if (cantidades.some((c) => !c || c.medida !== cantidades[0].medida)) return null;
-  return totalBonito(cantidades.reduce((suma, c) => suma + c.n, 0), cantidades[0].medida);
+
+  const { medida } = cantidades[0];
+  const suma = cantidades.reduce((total, c) => total + c.n, 0);
+  const ajustada = usos.some((u) => u.factor !== 1);
+  return totalBonito(ajustada ? redondear(suma, medida || "unidad") : suma, medida);
+}
+
+// ───────────── Cantidades según cuántas personas comen ─────────────
+
+// No llevan plural.
+const SIN_PLURAL = new Set(["g", "kg", "ml", "l"]);
+// Se miden, no se cuentan: admiten cuartos.
+const SE_MIDEN = new Set([
+  "taza", "tazas", "cucharada", "cucharadas", "cucharadita", "cucharaditas",
+  "kg", "litro", "litros", "l",
+]);
+// Después de estas palabras ya no se habla de lo que se cuenta.
+const CORTAN = new Set([
+  "de", "del", "en", "con", "para", "que", "o", "y", "a", "muy", "sin", "si", "al", "por",
+]);
+const PLURALES = { bistec: "bistecs" };
+const SINGULARES = { panes: "pan", bistecs: "bistec" };
+
+/**
+ * Redondea a una cantidad que se puede comprar o medir. Gramos y mililitros:
+ * de a 10 desde 100 y de a 5 por debajo. Tazas, cucharadas, kilos y litros: de
+ * a cuartos hasta 2 y de a medios desde ahí. Lo que se cuenta: de a cuartos
+ * por debajo de 1, de a medios hasta 3 y enteros desde ahí. Nunca da cero.
+ */
+function redondear(n, palabra) {
+  let paso;
+  if (palabra === "g" || palabra === "ml") paso = n >= 100 ? 10 : 5;
+  else if (SE_MIDEN.has(palabra)) paso = n < 2 ? 0.25 : 0.5;
+  else paso = n < 1 ? 0.25 : n < 3 ? 0.5 : 1;
+  return Math.max(paso, Math.round(n / paso + 1e-9) * paso);
+}
+
+function plural(palabra) {
+  if (SIN_PLURAL.has(palabra) || palabra.endsWith("s")) return palabra;
+  if (Object.hasOwn(PLURALES, palabra)) return PLURALES[palabra];
+  if (palabra.endsWith("ón")) return `${palabra.slice(0, -2)}ones`;
+  if (palabra.endsWith("ín")) return `${palabra.slice(0, -2)}ines`;
+  if (palabra.endsWith("z")) return `${palabra.slice(0, -1)}ces`;
+  return /[aeiouáéó]$/.test(palabra) ? `${palabra}s` : `${palabra}es`;
+}
+
+function singular(palabra) {
+  if (Object.hasOwn(SINGULARES, palabra)) return SINGULARES[palabra];
+  if (palabra.endsWith("ones")) return `${palabra.slice(0, -4)}ón`;
+  if (palabra.endsWith("ces")) return `${palabra.slice(0, -3)}z`;
+  return palabra.endsWith("s") ? palabra.slice(0, -1) : palabra;
+}
+
+/**
+ * Una línea de ingredientes con sus cantidades multiplicadas por `factor` y
+ * redondeadas: "1 cebolla picada" × 2 → "2 cebollas picadas". Cambia todos
+ * los números de la línea y, si hace falta, el plural de lo que les sigue.
+ */
+export function escalarLinea(linea, factor) {
+  if (factor === 1) return linea;
+  return linea.replace(
+    /(\d+(?:[.,]\d+)?[¼½¾]?|[¼½¾])((?: \p{L}+)*)/gu,
+    (_, numero, siguen) => {
+      const fraccion = FRACCIONES[numero.at(-1)] ?? 0;
+      const entero = fraccion ? numero.slice(0, -1) : numero;
+      const antes = Number((entero || "0").replace(",", ".")) + fraccion;
+
+      const lista = siguen.trim().split(" ").filter(Boolean);
+      const medida = lista[0] === "de" ? lista[1] : lista[0];
+      const ahora = redondear(antes * factor, medida ?? "unidad");
+
+      // Solo cambia de número lo que va pegado al número: "cebolla picada".
+      const cambiar = antes <= 1 && ahora > 1 ? plural : antes > 1 && ahora <= 1 ? singular : null;
+      if (cambiar) {
+        for (let i = 0; i < lista.length && !CORTAN.has(lista[i]); i++) lista[i] = cambiar(lista[i]);
+      }
+      // Desde mil gramos se dice en kilos.
+      if (medida === "g" && ahora >= 1000) {
+        lista[lista.indexOf("g")] = "kg";
+        return [conComa(ahora / 1000), ...lista].join(" ");
+      }
+      return [numeroBonito(ahora), ...lista].join(" ");
+    },
+  );
 }
 
 /**
@@ -316,18 +406,30 @@ function totalDe(clave, usos) {
  *   tienen algo. Cada item: { clave, nombre, nota, total, usos }, con
  *   `usos`: [{ dia, receta, lineas }] (las líneas de la receta que lo piden)
  *   y `total` solo si las cantidades se pueden sumar;
- * - `despensa`: condimentos y básicos que piden los platos, sin repetir.
+ * - `despensa`: condimentos y básicos que piden los platos, sin repetir;
+ * - `personas`: para cuántas se ajustó, o null.
+ * Con `personas`, las cantidades de cada receta se multiplican por
+ * personas / porciones de esa receta; sin él quedan como están escritas. Cada
+ * uso guarda además `originales` (las líneas sin ajustar) y su `factor`.
  */
-export function listaDeCompras(platos) {
+export function listaDeCompras(platos, { personas = null } = {}) {
   const usosDe = new Map();
   const despensa = new Set();
+  const cuantas = Number.isFinite(personas) && personas > 0 ? personas : null;
+  // Cada receta se multiplica según para cuántos rinde ella.
+  const factorDe = (receta) => (cuantas && receta.porciones > 0 ? cuantas / receta.porciones : 1);
 
   const anotar = (clave, dia, receta, linea) => {
     if (!usosDe.has(clave)) usosDe.set(clave, []);
     const usos = usosDe.get(clave);
     let uso = usos.find((u) => u.dia === dia);
-    if (!uso) usos.push((uso = { dia, receta, lineas: [] }));
-    if (linea && !uso.lineas.includes(linea)) uso.lineas.push(linea);
+    if (!uso) {
+      usos.push((uso = { dia, receta, factor: factorDe(receta), lineas: [], originales: [] }));
+    }
+    if (linea && !uso.originales.includes(linea)) {
+      uso.originales.push(linea);
+      uso.lineas.push(escalarLinea(linea, uso.factor));
+    }
   };
 
   platos.forEach((receta, dia) => {
@@ -363,7 +465,7 @@ export function listaDeCompras(platos) {
   })).filter((puesto) => puesto.items.length > 0);
 
   const orden = DESPENSA.map(([, nombre]) => nombre);
-  return { puestos, despensa: orden.filter((nombre) => despensa.has(nombre)) };
+  return { puestos, despensa: orden.filter((nombre) => despensa.has(nombre)), personas: cuantas };
 }
 
 const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -380,7 +482,10 @@ export function cantidadesDe(item) {
  * que la persona marcó y no hace falta comprar.
  */
 export function textoDeLista(lista, platos, { yaTengo = [] } = {}) {
-  const renglones = ["Lista de compras de la semana"];
+  const para = lista.personas
+    ? ` (para ${lista.personas} ${lista.personas === 1 ? "persona" : "personas"})`
+    : "";
+  const renglones = [`Lista de compras de la semana${para}`];
   for (const puesto of lista.puestos) {
     const items = puesto.items.filter((i) => !yaTengo.includes(i.clave));
     if (items.length === 0) continue;

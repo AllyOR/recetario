@@ -14,7 +14,9 @@ en la cocina. Sitio: <https://allyor.github.io/recetario/>
   ingredientes de cualquier mercado de Bolivia), sin repetir carne, pollo,
   arroz o fideo dos días seguidos. Cada día se puede cambiar. Debajo sale la
   lista de compras por puesto del mercado, con las cantidades de cada receta,
-  casillas para marcar lo que ya hay y un botón para compartirla.
+  casillas para marcar lo que ya hay y un botón para compartirla. Si se
+  elige para cuántas personas se cocina, las cantidades de la lista y de las
+  recetas del menú se ajustan y se redondean.
 - **Modo día y modo noche:** el botón de la cabecera cambia entre los dos y
   recuerda la elección; hasta entonces sigue al sistema.
 - **Comidas:** bolivianas e internacionales, con filtros de simples y nutritivas.

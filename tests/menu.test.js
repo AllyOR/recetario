@@ -364,6 +364,9 @@ test("escalarLinea redondea a cantidades que se pueden comprar y medir", () => {
     // Gramos: de a 10 desde 100, de a 5 por debajo.
     ["300 g de fideo", 0.75, "230 g de fideo"],
     ["50 g de queso", 0.75, "40 g de queso"],
+    // Desde mil gramos se dice en kilos.
+    ["600 g de filete de pescado", 3, "1,8 kg de filete de pescado"],
+    ["500 g de carne molida", 2, "1 kg de carne molida"],
     // Nunca baja a cero.
     ["¼ de cebolla", 0.25, "¼ de cebolla"],
   ];

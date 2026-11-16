@@ -14,7 +14,9 @@ import {
   buscarPorIngredientes,
   ingredientesFrecuentes,
 } from "./buscador.js";
-import { DIAS, armarMenu, cambiarDia, menuValido, listaDeCompras, textoDeLista } from "./menu.js";
+import {
+  DIAS, armarMenu, cambiarDia, menuValido, listaDeCompras, textoDeLista, escalarLinea,
+} from "./menu.js";
 
 const CONOCIDOS = clavesConocidas(RECETAS);
 
@@ -106,6 +108,8 @@ const guardadoMias = leerGuardado("recetario.mias", []);
 const guardadoBuscarEn = leerGuardado("recetario.buscarEn", "comida");
 const guardadoMenu = leerGuardado("recetario.menu", null);
 const guardadoCompras = leerGuardado("recetario.compras", []);
+const guardadoPersonas = leerGuardado("recetario.personas", null);
+const PERSONAS_MAXIMAS = 12;
 
 const estado = {
   tengo: leerTengo(leerGuardado("recetario.tengo", null)),
@@ -116,6 +120,11 @@ const estado = {
   // de compras. Si el menú guardado dejó de servir, se arma otro al entrar.
   menu: menuValido(RECETAS, guardadoMenu) ? guardadoMenu : null,
   compras: esLista(guardadoCompras) ? guardadoCompras : [],
+  // Para cuántas personas se cocina el menú; null = lo que dice cada receta.
+  personas:
+    Number.isInteger(guardadoPersonas) && guardadoPersonas >= 1 && guardadoPersonas <= PERSONAS_MAXIMAS
+      ? guardadoPersonas
+      : null,
   filtro: { comida: "todas", bebida: "todas", postre: "todas" },
   texto: { comida: "", bebida: "", postre: "" },
 };
@@ -454,9 +463,16 @@ function vistaReceta(id) {
   if (!r) return vistaNoEncontrada();
 
   const def = SECCIONES[r.seccion];
+
+  // Un plato del menú de la semana se muestra para las personas elegidas ahí.
+  const ajustada =
+    estado.personas && r.porciones && estado.personas !== r.porciones && estado.menu?.includes(r.id);
+  const porciones = ajustada ? estado.personas : r.porciones;
+  const factor = ajustada ? estado.personas / r.porciones : 1;
+
   const datos = [
     r.minutos ? `⏱ ${r.minutos} min` : null,
-    r.porciones ? `🍽 ${r.porciones} ${r.porciones === 1 ? "porción" : "porciones"}` : null,
+    porciones ? `🍽 ${porciones} ${porciones === 1 ? "porción" : "porciones"}` : null,
   ].filter(Boolean);
 
   const mios = estado.tengo[r.seccion] ?? [];
@@ -484,8 +500,15 @@ function vistaReceta(id) {
       : null,
 
     h("h2", {}, "Ingredientes"),
+    ajustada
+      ? h("p", { class: "aviso" },
+          `Está en tu menú de la semana: las cantidades van ajustadas para ${porciones} ` +
+          `${porciones === 1 ? "persona" : "personas"} (la receta es para ${r.porciones}). ` +
+          "En la preparación, ajusta igual el agua y lo demás que se mencione.")
+      : null,
     h("ul", { class: "marcables" },
-      r.ingredientes.map((texto) => h("li", {}, h("label", {}, h("input", { type: "checkbox" }), h("span", {}, texto))))),
+      r.ingredientes.map((texto) =>
+        h("li", {}, h("label", {}, h("input", { type: "checkbox" }), h("span", {}, escalarLinea(texto, factor)))))),
 
     h("h2", {}, "Preparación"),
     h("ol", { class: "pasos" }, r.pasos.map((texto) => h("li", {}, texto))),
@@ -529,8 +552,25 @@ function vistaMenu() {
   const novedad = h("p", { class: "ayuda", role: "status" });
   const botonDesmarcar = h("button", { type: "button", class: "enlace", onclick: desmarcarTodo }, "Desmarcar todo");
 
+  const ayudaLista = h("p", { class: "ayuda" });
+
   const platos = () => estado.menu.map((id) => RECETAS.find((r) => r.id === id));
+  const laLista = () => listaDeCompras(platos(), { personas: estado.personas });
   const corto = (dia) => DIAS[dia].slice(0, 3).toLowerCase();
+
+  const personas = h("select", { id: "menu-personas" },
+    h("option", { value: "" }, "Lo que dice cada receta"),
+    Array.from({ length: PERSONAS_MAXIMAS }, (_, i) =>
+      h("option", { value: String(i + 1) }, i === 0 ? "1 persona" : `${i + 1} personas`)));
+  personas.value = estado.personas ? String(estado.personas) : "";
+  personas.addEventListener("change", () => {
+    estado.personas = personas.value ? Number(personas.value) : null;
+    guardar("recetario.personas", estado.personas);
+    pintar();
+    novedad.textContent = estado.personas
+      ? `Cantidades ajustadas para ${estado.personas} ${estado.personas === 1 ? "persona" : "personas"}.`
+      : "Cantidades como las dice cada receta.";
+  });
 
   function guardarMenu(menu, lista) {
     estado.menu = menu;
@@ -565,7 +605,7 @@ function vistaMenu() {
           h("span", {},
             h("span", { class: "tarjeta-nombre" }, r.nombre),
             h("span", { class: "tarjeta-meta" },
-              `${r.minutos} min · para ${r.porciones}${r.etiquetas.includes("nutritiva") ? " · nutritiva" : ""}`),
+              `${r.minutos} min · para ${estado.personas ?? r.porciones}${r.etiquetas.includes("nutritiva") ? " · nutritiva" : ""}`),
           ),
         ),
         h("button", {
@@ -584,8 +624,13 @@ function vistaMenu() {
   }
 
   function pintarLista() {
-    const lista = listaDeCompras(platos());
+    const lista = laLista();
     const enCasa = estado.tengo.comida;
+    ayudaLista.textContent = (lista.personas
+      ? `Junta lo que piden los siete platos, con las cantidades ajustadas para ${lista.personas} ` +
+        `${lista.personas === 1 ? "persona" : "personas"} y redondeadas. `
+      : "Junta lo que piden los siete platos, con las cantidades de cada receta (cada plato dice para cuántos rinde). ") +
+      "Marca lo que ya tienes o ya compraste.";
 
     const renglon = (item) => {
       const casilla = h("input", { type: "checkbox", checked: estado.compras.includes(item.clave) });
@@ -636,6 +681,9 @@ function vistaMenu() {
     h("p", { class: "intro" },
       "Siete almuerzos sencillos, con ingredientes que se consiguen en cualquier mercado de Bolivia. " +
       "Cambia el plato que no te convenza; abajo está la lista de compras."),
+    h("div", { class: "campo campo-personas" },
+      h("label", { for: "menu-personas" }, "¿Para cuántas personas cocinas?"),
+      personas),
     zonaDias,
     novedad,
     h("div", { class: "acciones" },
@@ -660,9 +708,7 @@ function vistaMenu() {
     ),
 
     tituloLista,
-    h("p", { class: "ayuda" },
-      "Junta lo que piden los siete platos, con las cantidades de cada receta (cada plato dice para cuántos rinde). " +
-      "Marca lo que ya tienes o ya compraste."),
+    ayudaLista,
     cuenta,
     zonaLista,
     h("div", { class: "acciones" },
@@ -670,7 +716,7 @@ function vistaMenu() {
         type: "button", class: "boton",
         onclick: () => compartirDatos({
           title: "Lista de compras",
-          text: textoDeLista(listaDeCompras(platos()), platos(), { yaTengo: estado.compras }),
+          text: textoDeLista(laLista(), platos(), { yaTengo: estado.compras }),
         }),
       }, "Compartir lista"),
       botonDesmarcar,
